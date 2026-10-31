@@ -12,7 +12,7 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (init.body && !headers.has("Content-Type")) {
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -70,6 +70,7 @@ export interface Metrics {
   orders: number;
   knowledge_documents: number;
   knowledge_chunks: number;
+  indexed_chunks: number;
   open_tickets: number;
   messages: number;
 }
@@ -115,6 +116,62 @@ export interface OrderListResponse {
   total: number;
 }
 
+export type IndexStatus = "empty" | "pending" | "partial" | "indexed" | "failed";
+
+export interface KnowledgeSummary {
+  documents: number;
+  chunks: number;
+  indexed_chunks: number;
+  pending_chunks: number;
+  failed_chunks: number;
+}
+
+export interface KnowledgeDocument {
+  id: number;
+  title: string;
+  doc_type: string;
+  version: string;
+  status: string;
+  source_name: string;
+  effective_date: string | null;
+  created_at: string;
+  updated_at: string;
+  chunk_count: number;
+  indexed_count: number;
+  pending_count: number;
+  failed_count: number;
+  index_status: IndexStatus;
+}
+
+export interface KnowledgeDocumentList {
+  items: KnowledgeDocument[];
+  summary: KnowledgeSummary;
+}
+
+export interface KnowledgeIndexResponse {
+  document: KnowledgeDocument;
+  message: string;
+}
+
+export interface KnowledgeSearchItem {
+  chunk_id: number;
+  document_id: number;
+  title: string;
+  doc_type: string;
+  version: string;
+  heading: string | null;
+  content: string;
+  source_name: string;
+  similarity: number;
+}
+
+export interface KnowledgeSearchResponse {
+  query: string;
+  top_k: number;
+  total: number;
+  results: KnowledgeSearchItem[];
+}
+
 export const api = {
   health: () => request<HealthResponse>("/api/health"),
   login: (email: string, password: string) =>
@@ -126,4 +183,19 @@ export const api = {
   me: () => request<Admin>("/api/auth/me"),
   dashboard: () => request<DashboardResponse>("/api/admin/overview"),
   orders: (limit = 50) => request<OrderListResponse>(`/api/admin/orders?limit=${limit}`),
+  knowledgeDocuments: () =>
+    request<KnowledgeDocumentList>("/api/admin/knowledge/documents"),
+  uploadKnowledgeDocument: (formData: FormData) =>
+    request<KnowledgeDocument>("/api/admin/knowledge/documents", {
+      method: "POST",
+      body: formData,
+    }),
+  indexKnowledgeDocument: (documentId: number) =>
+    request<KnowledgeIndexResponse>(`/api/admin/knowledge/documents/${documentId}/index`, {
+      method: "POST",
+    }),
+  searchKnowledge: (query: string, topK = 5) =>
+    request<KnowledgeSearchResponse>(
+      `/api/admin/knowledge/search?q=${encodeURIComponent(query)}&top_k=${topK}`,
+    ),
 };

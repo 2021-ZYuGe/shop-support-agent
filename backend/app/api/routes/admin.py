@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import CurrentAdmin, DbSession
+from app.api.deps import AppSettings, CurrentAdmin, DbSession
 from app.db.base import utcnow
 from app.db.models import (
     HandoffTicket,
@@ -31,12 +31,25 @@ def _count(db: DbSession, model: type) -> int:
 
 
 @router.get("/overview", response_model=DashboardResponse)
-def overview(_: CurrentAdmin, db: DbSession) -> DashboardResponse:
+def overview(
+    _: CurrentAdmin,
+    db: DbSession,
+    settings: AppSettings,
+) -> DashboardResponse:
+    indexed_chunks = int(
+        db.scalar(
+            select(func.count())
+            .select_from(KnowledgeChunk)
+            .where(KnowledgeChunk.vector_status == "indexed")
+        )
+        or 0
+    )
     metrics = MetricSet(
         products=_count(db, Product),
         orders=_count(db, Order),
         knowledge_documents=_count(db, KnowledgeDocument),
         knowledge_chunks=_count(db, KnowledgeChunk),
+        indexed_chunks=indexed_chunks,
         open_tickets=int(
             db.scalar(
                 select(func.count())
@@ -47,6 +60,9 @@ def overview(_: CurrentAdmin, db: DbSession) -> DashboardResponse:
         ),
         messages=_count(db, Message),
     )
+
+    ingestion_ready = indexed_chunks > 0
+    retrieval_ready = ingestion_ready and settings.has_siliconflow_key
 
     recent_orders = db.scalars(
         select(Order)
@@ -71,8 +87,22 @@ def overview(_: CurrentAdmin, db: DbSession) -> DashboardResponse:
         Capability(
             key="rag_ingestion",
             label="知识库入库",
-            status="pending",
-            description="M2 将接入硅基流动 BGE-M3 与 Chroma 检索。",
+            status="ready" if ingestion_ready else "pending",
+            description=(
+                f"{indexed_chunks}/{metrics.knowledge_chunks} 个切片已写入 Chroma。"
+                if ingestion_ready
+                else "上传文档并建立向量索引后可用。"
+            ),
+        ),
+        Capability(
+            key="retrieval",
+            label="语义检索",
+            status="ready" if retrieval_ready else "pending",
+            description=(
+                "可在知识库页运行 Top-K 语义检索并查看引用片段。"
+                if retrieval_ready
+                else "配置 SiliconFlow Key 并完成索引后可用。"
+            ),
         ),
         Capability(
             key="ai_chat",

@@ -69,10 +69,10 @@
 浏览器
   └─ Vite + React + TypeScript
        └─ FastAPI + Python 3.12
-            ├─ LangGraph Agent（M4）
-            ├─ DeepSeek API：回复与 Function Calling（M3）
-            ├─ SiliconFlow API：BGE-M3 Embedding / Reranker（M2、M6）
-            ├─ Chroma：本地向量索引（M2）
+            ├─ LangGraph Agent（M4，未开始）
+            ├─ DeepSeek API：回复与 Function Calling（M3，未开始）
+            ├─ SiliconFlow API：BGE-M3 Embedding（已接入）/ Reranker（M6）
+            ├─ Chroma：本地向量索引（已接入）
             └─ MySQL 5.7：业务事实源
 ```
 
@@ -83,7 +83,7 @@ MySQL 保存订单、知识文档、切片正文、会话和工单；Chroma 只�
 
 ### 知识入库
 
-上传文档 → 解析 → 按段落与标题切片 → 调用硅基流动 Embedding → 写入 MySQL 切片 → 写入 Chroma → 标记索引状态。
+上传文档 → 解析 Markdown / TXT / PDF / DOCX → 按标题与段落切片（约 600 字符、80 字符重叠）→ 批量调用硅基流动 BGE-M3 生成 1024 维向量 → 正文写入 MySQL → 向量写入 Chroma（cosine）→ 记录 `pending / indexed / failed` 状态。
 
 ### 问答
 
@@ -98,8 +98,8 @@ MySQL 保存订单、知识文档、切片正文、会话和工单；Chroma 只�
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | M1 | 工程骨架、MySQL 模型与迁移、管理员认证、虚构种子数据、运营概览 | 已完成，MySQL 5.7 真库验收通过 |
-| M2 | Chroma、硅基流动 Embedding、知识切片与检索调试 | 下一步 |
-| M3 | DeepSeek RAG 流式问答、引用、无依据拒答 | 未开始 |
+| M2 | Chroma、硅基流动 Embedding、知识切片与检索调试 | 已完成，真实 API 与浏览器验收通过 |
+| M3 | DeepSeek RAG 流式问答、引用、无依据拒答 | 下一步 |
 | M4 | LangGraph、订单/物流工具、售后判断、人工转接 | 未开始 |
 | M5 | 会话中心、工单队列、反馈与成本面板 | 未开始 |
 | M6 | 50 条评测集、Reranker、Prompt 与检索参数对比 | 未开始 |

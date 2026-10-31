@@ -12,6 +12,8 @@ class UtcSerializationModel(BaseModel):
         "placed_at",
         "delivered_at",
         "generated_at",
+        "created_at",
+        "updated_at",
         check_fields=False,
     )
     def serialize_utc_datetime(self, value: datetime | None, _info: Any) -> str | None:

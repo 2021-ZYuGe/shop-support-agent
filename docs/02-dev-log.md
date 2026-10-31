@@ -252,3 +252,157 @@ M2 开工前需要：
 - 项目 `.env` 中配置 `SILICONFLOW_API_KEY`；
 - 部署 Chroma 的所有数据目录保持在 D 盘项目内；
 - 使用已经验收的 MySQL 开发库继续开发。
+
+---
+
+## 2026-10-31 · M2 知识库与向量检索（已完成）
+
+### 本轮目标
+
+把静态售后知识接入 RAG 数据链路：
+
+- 文档上传与解析；
+- 标题/段落感知切片；
+- 硅基流动 BGE-M3 Embedding；
+- Chroma 本地向量索引；
+- 索引状态与失败重试；
+- 后台知识库页与语义检索调试；
+- 为 M3 的 DeepSeek 问答准备可复用上下文。
+
+### 依赖与安装
+
+新增：
+
+```text
+chromadb==1.5.9
+```
+
+Chroma 安装在项目虚拟环境中，数据目录位于 D 盘项目目录，不启动独立服务、不使用 Docker。
+
+安装 Chroma 时带入了 ONNX Runtime、tokenizers 等依赖，但本项目没有调用 Chroma 默认 Embedding Function，也没有下载或运行本地向量模型。向量全部来自硅基流动 API。
+
+### 后端实现
+
+新增：
+
+- `backend/app/services/embedding.py`：硅基流动 BGE-M3 客户端，批量 Embedding、429/5xx 重试和错误处理；
+- `backend/app/services/vector_store.py`：Chroma `PersistentClient`、cosine 集合、显式向量 upsert 和 Top-K 查询；
+- `backend/app/services/knowledge.py`：文档解析、切片、索引状态、检索编排；
+- `backend/app/api/routes/knowledge.py`：知识文档列表、上传、索引、检索接口；
+- `backend/app/schemas/knowledge.py`：知识库接口数据模型。
+
+配置新增：
+
+- `CHROMA_PATH`；
+- `CHROMA_COLLECTION`；
+- `UPLOAD_DIR`；
+- `EMBEDDING_BATCH_SIZE`；
+- `EMBEDDING_TIMEOUT_SECONDS`；
+- `MAX_UPLOAD_SIZE_MB`。
+
+数据库迁移：
+
+- `cb67c75b7d70_add_knowledge_chunk_index_error.py`
+- 为 `knowledge_chunks` 增加 `index_error` 字段。
+- 开发库和测试库均已升级。
+
+### 知识入库规则
+
+- 支持 `.md`、`.markdown`、`.txt`、`.pdf`、`.docx`；
+- 单文件最大 10MB；
+- 中文切片目标约 600 字符，重叠 80 字符；
+- 单个文档最多 200 个切片；
+- 相同内容通过 SHA-256 去重；
+- 文件原文保存在 `data/uploads`，不提交 Git；
+- MySQL 保存文档与切片正文；Chroma 保存向量和检索元数据。
+
+### 索引与检索
+
+索引接口只处理 `pending` 和 `failed` 切片。  
+失败切片会记录 `index_error`，可以再次点击“建立索引”重试。
+
+搜索流程：
+
+```text
+query → BGE-M3 查询向量 → Chroma Top-K → 回 MySQL 取正文 → 返回相似度与来源
+```
+
+M2 仍只做纯向量检索，尚未加入 Reranker、混合检索和相似度阈值。
+
+### 真实 API 验收
+
+硅基流动连通性：
+
+- 模型：`BAAI/bge-m3`
+- HTTP 200
+- 维度：1024
+
+种子知识库索引：
+
+- 3 份文档，9 个切片；
+- 全部成功写入 Chroma；
+- 文档索引状态均为 `indexed`。
+
+查询结果（Top-1）：
+
+| 查询 | Top-1 命中 | 相似度 |
+|---|---|---:|
+| 七天无理由退货怎么退 | 七天无理由退货 | 0.774 |
+| 物流一直不更新怎么办 | 物流异常 | 0.690 |
+| 发票怎么开 | 发票申请 | 0.693 |
+
+浏览器实际上传：
+
+- 文件：`docs/examples/member-policy.md`
+- 自动切成 3 个切片并建立索引；
+- 当前开发库：4 份文档、12 个切片，全部 `indexed`；
+- 查询“会员积分怎么抵扣？”Top-1 为“积分抵扣”，相似度 73.2%。
+
+### 前端
+
+新增知识库工作台：
+
+- 文档上传表单；
+- 文件类型、标题、版本、生效日期；
+- 上传后自动调用索引；
+- 索引统计与文档状态表；
+- 单份文档的索引/重试按钮；
+- 语义检索调试，显示 Top-K、相似度、原文片段和 chunk 来源；
+- 顶部运营概览同步展示 4/6 能力已完成。
+
+截图：
+
+- `docs/images/m2-knowledge.png`
+- `docs/images/m2-dashboard.png`
+
+### 验证结果
+
+- 后端测试：**12 passed**；
+- 前端 TypeScript 构建通过；
+- lint：0 errors，5 个 React 建议级警告；
+- 真实 MySQL + Chroma + 硅基流动 API 联调通过；
+- 浏览器完整走通上传、自动索引、检索和结果展示。
+
+### 已知限制
+
+1. 扫描版 PDF 不做 OCR；
+2. 暂无文档删除和知识版本回滚；
+3. 暂无 Reranker、关键词混合检索和相似度阈值；
+4. Chroma 是本地索引，部署时必须保证数据目录持久化；
+5. 免费 Embedding 有速率/额度限制，重复索引会消耗额度；
+6. 公网部署和 Docker 仍不在本阶段范围。
+
+### 下一步：M3
+
+M3 计划：
+
+1. 配置 `DEEPSEEK_API_KEY`；
+2. 把用户问题、历史消息和检索片段组装成 Prompt；
+3. 调用 DeepSeek `deepseek-flash` 流式生成；
+4. 回答展示引用来源；
+5. 证据不足时拒答或建议转人工；
+6. 记录 token、延迟和费用；
+7. 建立 20 条左右的问答评测样本；
+8. 验证 SSE 流式输出、引用和错误降级。
+
+M3 开始需要 DeepSeek API Key；硅基流动 Key 已经在 M2 使用。

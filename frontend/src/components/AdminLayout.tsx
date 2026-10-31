@@ -46,15 +46,14 @@ export function AdminLayout() {
             <Package size={18} />
             <span>订单台账</span>
           </NavLink>
-          <button className="admin-nav__link" type="button" disabled>
+          <NavLink to="/admin/knowledge" className={navClassName}>
             <BookOpenText size={18} />
             <span>知识库</span>
-            <em>M2</em>
-          </button>
+          </NavLink>
           <button className="admin-nav__link" type="button" disabled>
             <MessagesSquare size={18} />
             <span>会话中心</span>
-            <em>M3</em>
+            <em>M5</em>
           </button>
         </nav>
 
@@ -62,9 +61,9 @@ export function AdminLayout() {
           <div className="milestone-note__icon">
             <Sparkles size={16} />
           </div>
-          <span className="eyebrow">MILESTONE 01</span>
-          <strong>工程底座已就位</strong>
-          <p>数据层、管理员认证和运营入口已经完成。</p>
+          <span className="eyebrow">MILESTONE 02</span>
+          <strong>知识检索已就位</strong>
+          <p>BGE-M3 向量化与 Chroma 语义检索已经接入。</p>
         </div>
 
         <div className="admin-account">

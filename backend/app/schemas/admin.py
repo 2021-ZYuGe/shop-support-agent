@@ -13,6 +13,7 @@ class MetricSet(BaseModel):
     orders: int
     knowledge_documents: int
     knowledge_chunks: int
+    indexed_chunks: int
     open_tickets: int
     messages: int
 

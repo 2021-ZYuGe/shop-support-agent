@@ -169,6 +169,7 @@ class KnowledgeChunk(Base):
     )
     chroma_id: Mapped[str | None] = mapped_column(String(80), nullable=True, unique=True)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    index_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
 
     document: Mapped[KnowledgeDocument] = relationship(back_populates="chunks")

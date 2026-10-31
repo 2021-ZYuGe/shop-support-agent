@@ -8,6 +8,11 @@ os.environ["SESSION_COOKIE_SECURE"] = "false"
 os.environ["SEED_ADMIN_EMAIL"] = "admin@test.local"
 os.environ["SEED_ADMIN_PASSWORD"] = "TestPass123!"
 os.environ["SEED_ADMIN_NAME"] = "测试管理员"
+os.environ["SILICONFLOW_API_KEY"] = ""
+os.environ["DEEPSEEK_API_KEY"] = ""
+os.environ["CHROMA_PATH"] = "./data/chroma_test"
+os.environ["CHROMA_COLLECTION"] = "knowledge_chunks_test"
+os.environ["UPLOAD_DIR"] = "./data/test_uploads"
 
 import pytest
 from fastapi.testclient import TestClient

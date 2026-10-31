@@ -4,6 +4,7 @@ import { AuthProvider } from "./auth/AuthContext";
 import { AdminLayout } from "./components/AdminLayout";
 import { RequireAuth } from "./components/RequireAuth";
 import { DashboardPage } from "./pages/DashboardPage";
+import { KnowledgePage } from "./pages/KnowledgePage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -26,6 +27,7 @@ export default function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="orders" element={<OrdersPage />} />
+            <Route path="knowledge" element={<KnowledgePage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

@@ -5,7 +5,7 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock3,
-  Database,
+  MessageSquareText,
   Package,
   RefreshCw,
   TicketCheck,
@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。M1 数据底座已完成 MySQL 联调。</p>
+          <p>这里是青禾生活的售后运营入口。知识库已接入 BGE-M3 与 Chroma 检索。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -144,7 +144,9 @@ export function DashboardPage() {
             <BookOpenText size={19} />
           </div>
           <strong>{data.metrics.knowledge_chunks}</strong>
-          <p>{data.metrics.knowledge_documents} 份售后文档等待向量化</p>
+          <p>
+            {data.metrics.indexed_chunks}/{data.metrics.knowledge_chunks} 个切片已建立向量索引
+          </p>
         </article>
         <article className="metric-card">
           <div className="metric-card__top">
@@ -237,46 +239,46 @@ export function DashboardPage() {
         <aside className="dashboard-column dashboard-column--narrow">
           <section className="sprint-card">
             <div className="sprint-card__top">
-              <span className="eyebrow eyebrow--light">MILESTONE 01</span>
+              <span className="eyebrow eyebrow--light">MILESTONE 02</span>
               <span className="sprint-card__badge">已完成</span>
             </div>
-            <h2>工程骨架与数据底座</h2>
-            <p>让后续 RAG、Agent 和运营后台有一块足够稳定的地基。</p>
+            <h2>知识库与向量检索</h2>
+            <p>静态售后知识已经可以被切片、向量化并按语义召回。</p>
             <ul>
               <li>
                 <CheckCircle2 size={15} />
-                Python 3.12 虚拟环境
+                Chroma 本地持久化索引
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                MySQL 表结构与迁移
+                硅基流动 BGE-M3 Embedding
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                管理员登录与会话
+                文档切片与索引状态
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                虚构商品、订单与知识种子
+                {data.metrics.indexed_chunks} 个切片已建立索引
               </li>
             </ul>
-            <Link className="button button--light button--full" to="/admin/orders">
-              查看订单台账
+            <Link className="button button--light button--full" to="/admin/knowledge">
+              进入知识库
               <ArrowRight size={15} />
             </Link>
           </section>
 
           <section className="next-card">
             <div className="next-card__icon">
-              <Database size={19} />
+              <MessageSquareText size={19} />
             </div>
-            <span className="eyebrow">UP NEXT · M2</span>
-            <h2>知识库与向量检索</h2>
-            <p>调用硅基流动 BGE-M3 生成向量，写入本地 Chroma，并建立检索调试页。</p>
+            <span className="eyebrow">UP NEXT · M3</span>
+            <h2>RAG 问答与引用</h2>
+            <p>把检索结果交给 DeepSeek，接入流式回答、知识引用和不确定时拒答。</p>
             <div className="next-card__meta">
-              <span>Embedding API</span>
-              <span>Chroma</span>
-              <span>文档切片</span>
+              <span>DeepSeek</span>
+              <span>SSE 流式</span>
+              <span>引用与拒答</span>
             </div>
           </section>
 

@@ -48,12 +48,25 @@ class Settings(BaseSettings):
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"
     embedding_model: str = "BAAI/bge-m3"
     rerank_model: str = "BAAI/bge-reranker-v2-m3"
+    embedding_batch_size: int = 8
+    embedding_timeout_seconds: float = 60.0
 
     chroma_path: str = "./data/chroma_dev"
+    chroma_collection: str = "knowledge_chunks"
+    upload_dir: str = "./data/uploads"
+    max_upload_size_mb: int = 10
 
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def resolved_chroma_dir(self) -> Path:
+        return (PROJECT_ROOT / self.chroma_path).resolve()
+
+    @property
+    def resolved_upload_dir(self) -> Path:
+        return (PROJECT_ROOT / self.upload_dir).resolve()
 
     @property
     def has_deepseek_key(self) -> bool:

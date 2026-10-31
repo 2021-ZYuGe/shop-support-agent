@@ -4,7 +4,7 @@
 
 这是一个**虚构店铺**的教学项目，所有商品、客户、订单和地址均为合成数据。
 
-> 当前进度：**M1 · 工程骨架与数据库（已完成）**。前后端骨架、MySQL 数据模型与迁移、开发/测试库联调、管理员认证、虚构种子数据和运营入口均已完成；RAG 与 Agent 在后续里程碑接入。
+> 当前进度：**M2 · 知识库与向量检索（已完成）**。M1 的前后端、MySQL 数据层、管理员认证和运营入口已经完成；M2 已接入硅基流动 BGE-M3、本地 Chroma、知识文档上传、索引状态和语义检索调试。RAG 问答与 Agent 在后续里程碑接入。
 
 ![青禾生活首页](docs/images/m1-landing.png)
 
@@ -17,8 +17,8 @@
 | 数据库 | MySQL 5.7 + SQLAlchemy + Alembic |
 | Agent（M4） | LangGraph |
 | 对话模型（M3） | DeepSeek `deepseek-flash` |
-| Embedding（M2） | 硅基流动 `BAAI/bge-m3` |
-| 向量索引（M2） | 本地 Chroma |
+| Embedding | 硅基流动 `BAAI/bge-m3`，1024 维 |
+| 向量索引 | 本地 Chroma 1.5.9（HNSW / cosine） |
 | 认证 | 数据库会话 + HttpOnly Cookie + scrypt 密码哈希 |
 
 全部 AI 推理通过 API 完成，本地不下载或运行大模型。由于电脑配置有限，前端选择更轻的 Vite，而不是 Next.js。
@@ -36,6 +36,22 @@
 - 桌面与手机端视觉验收通过。
 
 ![运营概览](docs/images/m1-dashboard.png)
+
+## M2 已完成
+
+- 支持 Markdown、TXT、PDF、DOCX 上传；
+- 按 Markdown 标题与段落切片，目标约 600 字符，80 字符重叠；
+- 批量调用硅基流动 `BAAI/bge-m3`，返回 1024 维向量；
+- 使用 Chroma `PersistentClient` 保存向量，余弦距离检索；
+- 显式传入向量，不触发 Chroma 默认本地 Embedding 模型下载；
+- MySQL 保存文档与切片正文，Chroma 作为可重建索引；
+- 支持 `pending / indexed / failed` 索引状态与失败重试；
+- 后台知识库页支持上传、查看索引状态、逐份建立索引和语义检索调试；
+- 后端测试扩展到 **12 passed**。
+
+种子数据包含 3 份文档、9 个切片。M2 验收时还通过上传接口导入 [`docs/examples/member-policy.md`](docs/examples/member-policy.md)，因此当前本地演示库为 4 份文档、12 个切片。
+
+![知识库与检索](docs/images/m2-knowledge.png)
 
 ## 本地启动
 
@@ -76,7 +92,7 @@ TEST_DATABASE_URL=mysql+pymysql://shop_support_app:你的密码@127.0.0.1:3306/s
 SEED_ADMIN_PASSWORD=你自己的初始管理员密码
 ```
 
-DeepSeek 和硅基流动的 Key 在 M3 / M2 之前可以留空。
+M2 的文档向量化和语义检索需要 `SILICONFLOW_API_KEY`。DeepSeek 的 Key 在 M3 之前可以留空。Key 只写入本地 `.env`，不会提交 Git。
 
 ### 4. 初始化 MySQL
 
@@ -145,10 +161,11 @@ npm run lint
 
 当前结果：
 
-- 后端：**7 passed**
+- 后端：**12 passed**
 - MySQL：开发库/测试库迁移成功；开发库种子成功；健康检查、登录、概览、登出接口均通过真实 MySQL 验证
+- 知识库：BGE-M3 连通性验证通过；种子文档实际写入 Chroma；语义检索返回正确命中
 - 前端：TypeScript 构建通过
-- 浏览器验收：使用真实 MySQL 完成登录 → 概览 → 订单台账 → 退出 → 未登录访问后台自动跳转
+- 浏览器验收：登录 → 知识库 → 上传文档 → 自动建立索引 → 语义检索；以及登录、订单台账、退出和未登录重定向
 
 ## API
 
@@ -160,6 +177,10 @@ npm run lint
 | GET | `/api/auth/me` | 当前登录管理员 |
 | GET | `/api/admin/overview` | 运营指标、最近订单、能力进度 |
 | GET | `/api/admin/orders` | 订单台账，最多返回 100 条 |
+| GET | `/api/admin/knowledge/documents` | 知识文档与索引状态 |
+| POST | `/api/admin/knowledge/documents` | 上传 Markdown/TXT/PDF/DOCX 并切片入库 |
+| POST | `/api/admin/knowledge/documents/{id}/index` | 为待处理/失败切片建立 Chroma 索引 |
+| GET | `/api/admin/knowledge/search` | 语义检索召回片段、相似度与来源 |
 
 ## 目录结构
 
@@ -171,6 +192,7 @@ npm run lint
 │  │  ├─ core/             # 配置与密码/会话安全
 │  │  ├─ db/               # SQLAlchemy 模型、会话、种子
 │  │  ├─ schemas/          # Pydantic 接口模型
+│  │  ├─ services/         # Embedding、Chroma、文档解析与切片
 │  │  └─ main.py
 │  ├─ alembic/             # 数据库迁移
 │  ├─ scripts/             # MySQL 初始化脚本
@@ -181,9 +203,11 @@ npm run lint
 │     ├─ auth/             # 登录状态
 │     ├─ components/       # 品牌、后台框架、状态徽标
 │     ├─ lib/              # API 客户端与格式化
-│     └─ pages/            # 首页、登录、概览、订单
-├─ data/                   # 本地上传、索引和验收库，不提交
-├─ docs/                   # 方案、学习过程、开发日志与双视角复盘
+│     └─ pages/            # 首页、登录、概览、订单、知识库
+├─ data/                   # 上传文件、Chroma 索引，不提交
+├─ docs/
+│  ├─ examples/            # 可手动上传的示例文档
+│  └─ images/              # 验收截图
 └─ .env.example
 ```
 
@@ -197,7 +221,6 @@ npm run lint
 
 ## 后续里程碑
 
-- **M2**：硅基流动 BGE-M3 + Chroma 知识入库与检索调试；
 - **M3**：DeepSeek RAG 流式问答与引用；
 - **M4**：LangGraph Agent、订单/物流工具、人工转接；
 - **M5**：会话中心、工单和运营数据面板；
