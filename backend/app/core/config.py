@@ -51,6 +51,9 @@ class Settings(BaseSettings):
 
     rag_top_k: int = 5
     rag_min_similarity: float = 0.40
+    rag_use_rerank: bool = False
+    rag_rerank_candidates: int = 12
+    chat_prompt_version: str = "v2"
     chat_history_limit: int = 6
     chat_history_message_chars: int = 1200
     chat_max_message_chars: int = 1000

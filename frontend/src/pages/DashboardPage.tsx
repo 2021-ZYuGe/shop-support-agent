@@ -5,9 +5,9 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock3,
-  Gauge,
   Package,
   RefreshCw,
+  ShieldCheck,
   TicketCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。运营闭环已上线，下一步进入评测与效果优化。</p>
+          <p>这里是青禾生活的售后运营入口。评测与优化已完成，下一步进入安全加固与最终交付。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -239,46 +239,51 @@ export function DashboardPage() {
         <aside className="dashboard-column dashboard-column--narrow">
           <section className="sprint-card">
             <div className="sprint-card__top">
-              <span className="eyebrow eyebrow--light">MILESTONE 05</span>
+              <span className="eyebrow eyebrow--light">MILESTONE 06</span>
               <span className="sprint-card__badge">已完成</span>
             </div>
-            <h2>运营工作台与工单闭环</h2>
-            <p>会话、工具轨迹、工单、反馈和运营指标已经连在一起。</p>
+            <h2>评测与效果优化</h2>
+            <p>用固定样本验证检索、工具、引用和回答质量，而不是凭感觉调 Prompt。</p>
             <ul>
               <li>
                 <CheckCircle2 size={15} />
-                会话中心与完整对话
+                50 条场景评测集
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                工单分配、备注与状态
+                Reranker 检索对比
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                用户反馈与知识缺口
+                Prompt v1 / v2 对比
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                Token、延迟与成本洞察
+                Token、延迟与成本报告
               </li>
             </ul>
-            <Link className="button button--light button--full" to="/admin/insights">
-              打开运营洞察
+            <a
+              className="button button--light button--full"
+              href="https://github.com/2021-ZYuGe/shop-support-agent/blob/main/docs/05-evaluation-report.md"
+              target="_blank"
+              rel="noreferrer"
+            >
+              查看评测报告
               <ArrowRight size={15} />
-            </Link>
+            </a>
           </section>
 
           <section className="next-card">
             <div className="next-card__icon">
-              <Gauge size={19} />
+              <ShieldCheck size={19} />
             </div>
-            <span className="eyebrow">UP NEXT · M6</span>
-            <h2>评测与效果优化</h2>
-            <p>建立固定评测集，对比检索、引用、工具与回答质量，再调优 Reranker 和 Prompt。</p>
+            <span className="eyebrow">UP NEXT · M7</span>
+            <h2>安全加固与最终交付</h2>
+            <p>补测试、限流、PII 脱敏、README、演示视频和最终 GitHub 发布。</p>
             <div className="next-card__meta">
-              <span>RAG 评测</span>
-              <span>Reranker</span>
-              <span>效果报告</span>
+              <span>安全</span>
+              <span>测试</span>
+              <span>演示</span>
             </div>
           </section>
 

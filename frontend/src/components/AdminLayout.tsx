@@ -70,9 +70,9 @@ export function AdminLayout() {
           <div className="milestone-note__icon">
             <Sparkles size={16} />
           </div>
-          <span className="eyebrow">MILESTONE 05</span>
-          <strong>运营闭环已上线</strong>
-          <p>会话、工单、反馈与运营洞察已经接入。</p>
+          <span className="eyebrow">MILESTONE 06</span>
+          <strong>评测体系已建立</strong>
+          <p>50 条评测集、Reranker 与 Prompt 对比已完成。</p>
         </div>
 
         <div className="admin-account">

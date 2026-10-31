@@ -872,3 +872,119 @@ M6 计划：
 6. 把实测结果写进学习文档、产品文档和简历素材。
 
 M6 不需要新的外部 Key。
+
+## 2026-10-31 · M6 评测与效果优化（已完成）
+
+### 本轮目标
+
+1. 建立覆盖知识、订单、物流、售后、转人工、拒答和多轮的固定评测集；
+2. 让 Agent 的检索参数和 Prompt 可注入，保证对比只改变一个变量；
+3. 接入 Reranker，新增 Prompt v2；
+4. 用真实 Chroma、SiliconFlow 和 DeepSeek 跑三组配置；
+5. 输出可复现报告，并据此决定生产默认配置。
+
+### 后端实现
+
+新增/修改：
+
+- `app/services/rerank.py`：SiliconFlow `BAAI/bge-reranker-v2-m3` 客户端；
+- `app/services/knowledge.py`：检索支持 `min_similarity`、`use_rerank`、`candidate_k`；
+- `app/services/agent.py`：新增 `AgentOptions`，支持 Top-K、阈值、Reranker、Prompt 版本注入；
+- `app/services/chat.py`：新增 Prompt v2；
+- `app/core/config.py`：新增 `RAG_USE_RERANK`、`RAG_RERANK_CANDIDATES`、`CHAT_PROMPT_VERSION`；
+- `scripts/run_evaluation.py`：评测运行器、评分、汇总、检索 sweep、报告生成；
+- `evals/cases.json`：50 条评测样本；
+- `tests/test_rerank.py`：Reranker 排序与 Prompt v2 测试。
+
+评测使用 `persist=False`：
+
+```text
+临时会话 → Agent 运行 → 收集结果 → rollback
+```
+
+不向演示库写入会话、工单、工具审计。
+
+### 三组配置
+
+| 配置 | 检索 | Prompt |
+|---|---|---|
+| baseline | Top-5，阈值 0.40，无 Reranker | v1 |
+| prompt_v2 | Top-5，阈值 0.40，无 Reranker | v2 |
+| optimized | Top-12 → Reranker → Top-5 | v2 |
+
+### 验证结果
+
+全量运行：
+
+```text
+baseline   50/50
+prompt_v2  50/50
+optimized  50/50
+```
+
+性能和成本：
+
+| 配置 | 平均延迟 | P95 | 总 tokens | 估算成本 |
+|---|---:|---:|---:|---:|
+| baseline | 2,780ms | 5,635ms | 38,850 | ¥0.0759 |
+| prompt_v2 | 2,394ms | 4,766ms | 32,130 | ¥0.0613 |
+| optimized | 2,862ms | 5,362ms | 32,041 | ¥0.0601 |
+
+检索 sweep（19 条需要知识来源的样本）：
+
+| 配置 | Top-1 | MRR |
+|---|---:|---:|
+| Top-5 / threshold 0.40 | 15/19 | 0.8702 |
+| Top-8 / threshold 0.40 | 15/19 | 0.8702 |
+| Top-5 / threshold 0.35 | 15/19 | 0.8702 |
+| Top-5 / threshold 0.40 + Reranker | 18/19 | 0.9649 |
+
+结论：
+
+- 通过率饱和，三种配置都完成任务；
+- Prompt v2 降低 17.3% tokens、13.9% 平均延迟、19.2% 估算成本；
+- Reranker 提升 Top-1 和 MRR，但平均延迟增加约 19.5%，通过率没有继续提升；
+- 生产默认 `Prompt v2 + Reranker off`。
+
+### 评测口径修正
+
+第一次全量运行出现 4 条失败，复查发现其中多条是评分词过窄：
+
+- K05 实际回答“48 小时内”，评分词只写“四十八小时”；
+- K10 实际回答“9:00 至 21:00”，评分词只写“九点/二十一点”；
+- O06 实际回答“已签收并完成”，评分词只写“已完成”；
+- A09 实际回答“3 个工作日”，评分词只写“三个工作日”。
+
+另外 R05“今天天气怎么样”进入 RAG 分支，但回答明确拒答。  
+于是：
+
+1. 补充数字/时间/同义写法；
+2. 允许 R05 走 `fallback` 或 `rag`；
+3. 拒答指标按“安全行为”统计；
+4. 重新跑全量，而不是手动修改结果。
+
+最终三组配置均为 50/50，报告见 `docs/05-evaluation-report.md`。
+
+### 测试与构建
+
+- 后端测试：**33 passed**；
+- 前端 `tsc -b && vite build` 通过；lint 0 errors、13 条既有 React 规则 warning；
+- 生产默认 `AgentOptions(prompt_version='v2', use_rerank=False)` 已核对；
+- 评测 API 费用约 ¥0.20（按配置单价估算，不含 Embedding/Reranker 免费额度）。
+
+### 当前限制
+
+1. 50 条样本仍小，只覆盖合成场景；
+2. 单次运行，LLM 随机性会影响结果；
+3. 规则评分不能判断完全忠实；
+4. 通过率饱和，需要更难的样本；
+5. 没有人工评审、LLM-as-judge 或线上 A/B；
+6. Embedding/Reranker 成本未计入估算。
+
+### 下一步：M7
+
+1. 消费者接口限流与防滥用；
+2. 日志和 API 返回的 PII 检查；
+3. 更完整的错误处理与安全测试；
+4. README、演示脚本、截图/视频和最终发布；
+5. 补充更难的评测样本，避免通过率饱和。

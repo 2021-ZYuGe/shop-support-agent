@@ -4,7 +4,7 @@
 
 这是一个**虚构店铺**的教学项目，所有商品、客户、订单和地址均为合成数据。
 
-> 当前进度：**M5 · 运营工作台与工单闭环（已完成）**。M1-M4 已完成全栈底座、知识库、带引用的 RAG 问答和 Agent 业务工具；M5 新增会话中心、工单队列、用户反馈、知识缺口、Token/延迟/成本洞察。下一步是评测与效果优化。
+> 当前进度：**M6 · 评测与效果优化（已完成）**。M1-M5 已完成全栈底座、知识库、带引用的 RAG 问答、Agent 业务工具和运营工作台；M6 新增 50 条固定评测集、Prompt v2、可选 Reranker、三组配置对比和可复现评测报告。下一步是安全加固与最终交付。
 
 ![青禾生活首页](docs/images/m4-landing.png)
 
@@ -18,6 +18,7 @@
 | Agent | LangGraph 1.2.19 |
 | 对话模型 | DeepSeek `deepseek-flash` + SSE 流式输出 |
 | Embedding | 硅基流动 `BAAI/bge-m3`，1024 维 |
+| 重排（可选） | 硅基流动 `BAAI/bge-reranker-v2-m3` |
 | 向量索引 | 本地 Chroma 1.5.9（HNSW / cosine） |
 | 业务工具 | 订单、物流、售后条件判断、人工工单 |
 | 认证 | 管理员数据库会话 + HttpOnly Cookie + scrypt 密码哈希 |
@@ -111,6 +112,28 @@
 当前演示数据中的反馈/工单写入由自动化测试库验证；真实本地演示库的后台页面已完成只读浏览器验收，避免自动改动演示状态。
 
 ![会话中心](docs/images/m5-conversations.png)
+
+## M6 已完成
+
+- 建立 50 条固定评测集，覆盖知识、订单、物流、售后、转人工、拒答和多轮场景；
+- 每条样本显式声明期望模式、工具、知识来源、引用、关键词和禁止内容；
+- LangGraph Agent 支持 `AgentOptions` 注入 Top-K、阈值、Reranker 和 Prompt 版本；
+- 接入硅基流动 `BAAI/bge-reranker-v2-m3`，从 12 个候选中重排后取 Top-5；
+- 新增 Prompt v2：先结论、引用编号、限制篇幅、明确不确定时拒答；
+- 评测运行在回滚事务中，不向演示库写入会话、工单或工具日志；
+- 自动输出逐题结果、分类通过率、检索 Top-1/MRR、Token、延迟和估算成本；
+- 运营概览增加评测能力，当前 8/8 已就绪；
+- 报告：[M6 评测报告](docs/05-evaluation-report.md)。
+
+实测结果（50 条样本，真实 Chroma + SiliconFlow + DeepSeek）：
+
+| 配置 | 通过率 | 引用覆盖 | 检索 Top-1 | 平均延迟 | 总 tokens | 估算成本 |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline（Prompt v1） | 50/50 | 100% | 15/19 | 2,780ms | 38,850 | ¥0.0759 |
+| prompt_v2（生产默认） | 50/50 | 100% | 15/19 | 2,394ms | 32,130 | ¥0.0613 |
+| optimized（+ Reranker） | 50/50 | 100% | 18/19 | 2,862ms | 32,041 | ¥0.0601 |
+
+结论：当前评测集上三种配置都完成了任务，Prompt v2 在保持通过率的同时减少约 17% tokens、14% 平均延迟和 19% 估算成本；Reranker 明显改善首条依据排序（MRR 0.8702 → 0.9649），但增加约 20% 延迟，端到端通过率没有继续提升。因此生产默认 **Prompt v2 + 关闭 Reranker**，Reranker 作为可选的排序增强。
 
 ## 本地启动
 
@@ -218,14 +241,22 @@ npm run lint
 
 后端测试使用内存 SQLite，快速验证 API、认证和数据层逻辑；开发数据库仍按要求使用 MySQL。
 
+评测需要真实的 `SILICONFLOW_API_KEY` 和 `DEEPSEEK_API_KEY`，会调用 Embedding/Reranker 与 DeepSeek，产生少量 API 费用：
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe scripts/run_evaluation.py --config all
+```
+
 当前结果：
 
-- 后端：**31 passed**
+- 后端：**33 passed**
 - MySQL：开发库/测试库迁移成功；开发库种子成功；健康检查、登录、概览、登出接口均通过真实 MySQL 验证
 - 知识库：BGE-M3 连通性验证通过；种子文档实际写入 Chroma；语义检索返回正确命中
 - 聊天：DeepSeek 流式回答、引用、拒答和会话持久化通过真实 API 与浏览器验收
 - Agent：订单/物流工具、售后判断、人工工单、工具轨迹和审计日志通过真实 MySQL 与浏览器验收
 - 运营：反馈、会话中心、工单队列与洞察统计通过自动化测试；后台页面完成只读浏览器验收
+- 评测：50 条样本 × 3 组配置全部完成；Prompt v2 降低 17.3% tokens、13.9% 平均延迟；Reranker 将检索 MRR 从 0.8702 提升到 0.9649
 - 前端：TypeScript 构建通过
 - 浏览器验收：聊天 → 真实工具回答 → 工具轨迹；会话中心 → 会话详情；工单与洞察页面；知识库上传与检索；登录、订单台账、退出和未登录重定向
 
@@ -262,10 +293,11 @@ npm run lint
 │  │  ├─ core/             # 配置与密码/会话安全
 │  │  ├─ db/               # SQLAlchemy 模型、会话、种子
 │  │  ├─ schemas/          # Pydantic 接口模型
-│  │  ├─ services/         # Embedding、Chroma、RAG、LLM、Agent 与业务工具
+│  │  ├─ services/         # Embedding、Chroma、RAG、LLM、Reranker、Agent 与业务工具
 │  │  └─ main.py
 │  ├─ alembic/             # 数据库迁移
-│  ├─ scripts/             # MySQL 初始化脚本
+│  ├─ evals/               # 50 条固定评测样本
+│  ├─ scripts/             # MySQL 初始化、评测运行器
 │  ├─ tests/
 │  └─ requirements.txt
 ├─ frontend/
@@ -288,11 +320,11 @@ npm run lint
 - [开发日志](docs/02-dev-log.md)
 - [产品经理视角](docs/03-product-manager-view.md)
 - [AI 应用开发视角](docs/04-ai-developer-view.md)
+- [M6 评测报告](docs/05-evaluation-report.md)
 
 ## 后续里程碑
 
-- **M6**：评测集、Reranker 与 Prompt 优化；
-- **M7**：安全、测试、文档与最终演示。
+- **M7**：安全加固、限流、PII 检查、最终文档、演示与 GitHub 发布。
 
 ## 安全与边界
 
@@ -304,4 +336,6 @@ npm run lint
 - 消费者会话使用不可枚举的随机 public ID，但当前尚无正式登录和防滥用限流；
 - 订单与物流工具只读，转人工只创建工单，不执行真实退款、改地址或赔付；
 - 工单处理仅限管理员后台；成本是按 `.env` 单价计算的演示估值；
-- 后续阶段会继续补充评测集、Reranker、访问限流和正式安全加固。
+- 评测运行在回滚事务中，不写入演示库会话、工单或工具日志；
+- Prompt v2 已设为默认；Reranker 默认关闭，可通过 `RAG_USE_RERANK=true` 开启；
+- 后续阶段会继续补充访问限流、PII 检查、正式安全加固和更难的评测样本。

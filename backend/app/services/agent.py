@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 from sqlalchemy.orm import Session
@@ -58,9 +58,32 @@ MISSING_ORDER_ANSWER = (
 PRIORITY_LABELS = {"high": "高", "normal": "普通"}
 
 
+@dataclass(frozen=True)
+class AgentOptions:
+    top_k: int = 5
+    min_similarity: float = 0.40
+    use_rerank: bool = False
+    rerank_candidates: int = 12
+    prompt_version: Literal["v1", "v2"] = "v1"
+
+    @classmethod
+    def from_settings(cls) -> AgentOptions:
+        settings = get_settings()
+        return cls(
+            top_k=settings.rag_top_k,
+            min_similarity=settings.rag_min_similarity,
+            use_rerank=settings.rag_use_rerank,
+            rerank_candidates=settings.rag_rerank_candidates,
+            prompt_version=(
+                "v2" if settings.chat_prompt_version.lower() == "v2" else "v1"
+            ),
+        )
+
+
 class AgentState(TypedDict, total=False):
     query: str
     history: list[dict[str, str]]
+    options: AgentOptions
     toolkit: Any
     intent: str
     order_no: str | None
@@ -209,17 +232,15 @@ def _create_handoff(state: AgentState) -> dict[str, Any]:
 
 def _retrieve_knowledge(state: AgentState) -> dict[str, Any]:
     toolkit: OrderToolkit = state["toolkit"]
-    settings = get_settings()
-    raw_sources = knowledge.search_knowledge(
+    options = state.get("options") or AgentOptions.from_settings()
+    sources = knowledge.search_knowledge(
         toolkit.db,
         state["query"],
-        settings.rag_top_k,
+        top_k=options.top_k,
+        min_similarity=options.min_similarity,
+        use_rerank=options.use_rerank,
+        candidate_k=options.rerank_candidates,
     )
-    sources = [
-        source
-        for source in raw_sources
-        if float(source.get("similarity", 0)) >= settings.rag_min_similarity
-    ][: settings.rag_top_k]
     return {"sources": sources}
 
 
@@ -279,6 +300,7 @@ def _compose_answer(state: AgentState) -> dict[str, Any]:
     sources = state.get("sources", [])
     history = state.get("history", [])
     query = state["query"]
+    options = state.get("options") or AgentOptions.from_settings()
 
     if intent == "handoff":
         handoff = state.get("handoff")
@@ -333,6 +355,7 @@ def _compose_answer(state: AgentState) -> dict[str, Any]:
                 "请基于业务系统查询结果回答，不要编造未提供的订单或物流数据。"
                 "涉及退款、修改地址或赔付时只能说明边界，并建议转人工。"
             ),
+            prompt_version=options.prompt_version,
         )
         return {"mode": "agent", "llm_messages": messages}
 
@@ -348,6 +371,7 @@ def _compose_answer(state: AgentState) -> dict[str, Any]:
                     "请结合售后政策与条件判断结果回答。明确这是辅助判断，不执行真实退款；"
                     "如需实际退货或争议处理，建议用户转人工工单。"
                 ),
+                prompt_version=options.prompt_version,
             )
             return {"mode": "agent", "llm_messages": messages}
         if sources:
@@ -359,12 +383,18 @@ def _compose_answer(state: AgentState) -> dict[str, Any]:
                     "用户尚未提供订单号，无法做具体订单的售后资格判断。"
                     "请解释通用售后政策，并请用户提供订单号以便进一步核实。"
                 ),
+                prompt_version=options.prompt_version,
             )
             return {"mode": "rag", "llm_messages": messages}
         return {"mode": "fallback", "direct_answer": chat_service.FALLBACK_ANSWER}
 
     if sources:
-        messages = chat_service.build_llm_messages(history, sources, query)
+        messages = chat_service.build_llm_messages(
+            history,
+            sources,
+            query,
+            prompt_version=options.prompt_version,
+        )
         return {"mode": "rag", "llm_messages": messages}
 
     return {"mode": "fallback", "direct_answer": chat_service.FALLBACK_ANSWER}
@@ -421,27 +451,34 @@ def run_agent(
     conversation: Conversation,
     history: list[dict[str, str]],
     query: str,
+    options: AgentOptions | None = None,
+    persist: bool = True,
 ) -> AgentOutcome:
     toolkit = OrderToolkit(db, conversation)
+    resolved_options = options or AgentOptions.from_settings()
     initial_state: AgentState = {
         "query": query,
         "history": history,
+        "options": resolved_options,
         "toolkit": toolkit,
         "sources": [],
     }
 
     try:
         result = agent_graph.invoke(initial_state)
-        db.commit()
+        outcome = AgentOutcome(
+            intent=result.get("intent", "knowledge"),
+            mode=result.get("mode", "fallback"),
+            sources=result.get("sources", []),
+            tool_trace=list(result.get("toolkit", toolkit).trace),
+            llm_messages=result.get("llm_messages"),
+            direct_answer=result.get("direct_answer"),
+        )
+        if persist:
+            db.commit()
+        else:
+            db.rollback()
+        return outcome
     except Exception:
         db.rollback()
         raise
-
-    return AgentOutcome(
-        intent=result.get("intent", "knowledge"),
-        mode=result.get("mode", "fallback"),
-        sources=result.get("sources", []),
-        tool_trace=list(result.get("toolkit", toolkit).trace),
-        llm_messages=result.get("llm_messages"),
-        direct_answer=result.get("direct_answer"),
-    )

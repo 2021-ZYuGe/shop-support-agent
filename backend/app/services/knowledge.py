@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.config import get_settings
 from app.db.base import utcnow
 from app.db.models import KnowledgeChunk, KnowledgeDocument
-from app.services import embedding, vector_store
+from app.services import embedding, rerank, vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -448,6 +448,9 @@ def search_knowledge(
     db: Session,
     query: str,
     top_k: int = 5,
+    min_similarity: float = 0.0,
+    use_rerank: bool = False,
+    candidate_k: int | None = None,
 ) -> list[dict[str, Any]]:
     settings = get_settings()
     query = query.strip()
@@ -459,7 +462,8 @@ def search_knowledge(
         )
 
     query_vector = embedding.get_embedding_client().embed_query(query)
-    hits = vector_store.get_vector_store().query(query_vector, top_k)
+    candidate_count = max(top_k, candidate_k or top_k) if use_rerank else top_k
+    hits = vector_store.get_vector_store().query(query_vector, candidate_count)
     if not hits:
         return []
 
@@ -474,7 +478,7 @@ def search_knowledge(
     results: list[dict[str, Any]] = []
     for hit in hits:
         chunk = by_id.get(hit.chunk_id)
-        if chunk is None:
+        if chunk is None or hit.similarity < min_similarity:
             continue
         results.append(
             {
@@ -489,4 +493,19 @@ def search_knowledge(
                 "similarity": hit.similarity,
             }
         )
-    return results
+
+    if not use_rerank or not results:
+        return results[:top_k]
+
+    reranked = rerank.get_rerank_client().rerank(
+        query,
+        [f"{result['heading'] or ''}\n{result['content']}" for result in results],
+        top_n=top_k,
+    )
+    reordered: list[dict[str, Any]] = []
+    for hit in reranked:
+        if 0 <= hit.index < len(results):
+            source = dict(results[hit.index])
+            source["rerank_score"] = hit.score
+            reordered.append(source)
+    return reordered[:top_k]

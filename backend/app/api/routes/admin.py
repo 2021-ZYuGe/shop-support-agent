@@ -130,6 +130,12 @@ def overview(
             status="ready",
             description="会话、工单、反馈与运营洞察已接入。",
         ),
+        Capability(
+            key="evaluation",
+            label="评测与优化",
+            status="ready",
+            description="50 条评测集、Reranker 与 Prompt 对比已接入。",
+        ),
     ]
 
     return DashboardResponse(

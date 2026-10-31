@@ -1,0 +1,1031 @@
+[
+  {
+    "id": "K01",
+    "category": "knowledge",
+    "query": "七天无理由退货需要满足什么条件？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "七天无理由退货"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "七天",
+      "无理由"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K02",
+    "category": "knowledge",
+    "query": "商品有质量问题可以换货吗？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "质量",
+      "换货"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K03",
+    "category": "knowledge",
+    "query": "退款多久能到账？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "退款时效"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "三个工作日",
+      "3 个工作日",
+      "3个工作日"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K04",
+    "category": "knowledge",
+    "query": "发票怎么开？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "发票申请"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "电子",
+      "发票"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K05",
+    "category": "knowledge",
+    "query": "付款后一般多久发出？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "发货时效"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "四十八小时",
+      "48"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K06",
+    "category": "knowledge",
+    "query": "偏远地区需要额外运费吗？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "配送范围"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "偏远",
+      "运费"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K07",
+    "category": "knowledge",
+    "query": "可以修改收货地址吗？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "修改收货信息"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "发货前"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K08",
+    "category": "knowledge",
+    "query": "会员积分怎么抵扣？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "积分抵扣"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "100",
+      "1 元"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K09",
+    "category": "knowledge",
+    "query": "会员退货政策有什么不同？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "会员退货说明"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "会员",
+      "七天"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "K10",
+    "category": "knowledge",
+    "query": "客服的服务时间是什么时候？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "联系人工客服"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "九点",
+      "二十一点",
+      "9:00",
+      "21:00"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O01",
+    "category": "order",
+    "query": "查一下订单 QH20261028003",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O02",
+    "category": "order",
+    "query": "QH20261031007 现在是什么状态？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "待发货"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O03",
+    "category": "order",
+    "query": "订单 QH20261025008 怎么样？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "取消"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O04",
+    "category": "order",
+    "query": "我的订单 QH20261011005",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "已完成",
+      "完成"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O05",
+    "category": "order",
+    "query": "QH20261030004 付款成功了吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "待发货"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "O06",
+    "category": "order",
+    "query": "帮我看看 QH20261021001",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_order"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "已完成",
+      "完成"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L01",
+    "category": "logistics",
+    "query": "查一下订单 QH20261029006 的物流",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "运输",
+      "在途"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L02",
+    "category": "logistics",
+    "query": "QH20261026002 到哪了？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "杭州"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L03",
+    "category": "logistics",
+    "query": "物流 QH20261028003",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L04",
+    "category": "logistics",
+    "query": "订单 QH20261030004 发货了吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "待发货",
+      "暂无"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L05",
+    "category": "logistics",
+    "query": "QH20261011005 现在物流到哪了？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "L06",
+    "category": "logistics",
+    "query": "帮我查 QH20261031007 的物流",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "待发货",
+      "暂无"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A01",
+    "category": "after_sales",
+    "query": "订单 QH20261028003 有划痕能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "符合",
+      "15"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A02",
+    "category": "after_sales",
+    "query": "QH20261028003 不喜欢能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "七天无理由退货"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "七天"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A03",
+    "category": "after_sales",
+    "query": "QH20261011005 能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "超过"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A04",
+    "category": "after_sales",
+    "query": "订单 QH20261011005 有质量问题能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "符合",
+      "15"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A05",
+    "category": "after_sales",
+    "query": "QH20261031007 能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A06",
+    "category": "after_sales",
+    "query": "QH20261025008 能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "取消"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A07",
+    "category": "after_sales",
+    "query": "这个能退吗？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "订单号"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A08",
+    "category": "after_sales",
+    "query": "我买的台灯坏了怎么办？",
+    "history": [],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "订单号"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A09",
+    "category": "after_sales",
+    "query": "订单 QH20261028003 退款多久到账？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "退款时效"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "三个工作日",
+      "3 个工作日",
+      "3个工作日"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A10",
+    "category": "after_sales",
+    "query": "QH20261030004 有质量问题能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A11",
+    "category": "after_sales",
+    "query": "我要退货，订单 QH20261029006 可以吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "签收"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "A12",
+    "category": "after_sales",
+    "query": "订单 QH20261021001 商品有瑕疵能退吗？",
+    "history": [],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "符合"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "H01",
+    "category": "handoff",
+    "query": "我要转人工",
+    "history": [],
+    "expected_modes": [
+      "handoff"
+    ],
+    "expected_tools": [
+      "create_handoff"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "工单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "H02",
+    "category": "handoff",
+    "query": "帮我转人工处理退款",
+    "history": [],
+    "expected_modes": [
+      "handoff"
+    ],
+    "expected_tools": [
+      "create_handoff"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "工单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "H03",
+    "category": "handoff",
+    "query": "我要投诉订单 QH20261028003",
+    "history": [],
+    "expected_modes": [
+      "handoff"
+    ],
+    "expected_tools": [
+      "create_handoff"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "工单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "H04",
+    "category": "handoff",
+    "query": "转真人客服",
+    "history": [],
+    "expected_modes": [
+      "handoff"
+    ],
+    "expected_tools": [
+      "create_handoff"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "工单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R01",
+    "category": "refusal",
+    "query": "我的订单到哪了",
+    "history": [],
+    "expected_modes": [
+      "clarify"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "订单号"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R02",
+    "category": "refusal",
+    "query": "帮我查快递",
+    "history": [],
+    "expected_modes": [
+      "clarify"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "订单号"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R03",
+    "category": "refusal",
+    "query": "订单 QH99999999999 到哪了",
+    "history": [],
+    "expected_modes": [
+      "clarify"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": true,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "没有找到订单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R04",
+    "category": "refusal",
+    "query": "请讲一个笑话",
+    "history": [],
+    "expected_modes": [
+      "fallback"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "没有足够",
+      "无法",
+      "转人工"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R05",
+    "category": "refusal",
+    "query": "今天天气怎么样",
+    "history": [],
+    "expected_modes": [
+      "fallback",
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "没有足够",
+      "无法",
+      "转人工"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R06",
+    "category": "refusal",
+    "query": "你们支持比特币支付吗",
+    "history": [],
+    "expected_modes": [
+      "rag",
+      "fallback"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "无法",
+      "没有",
+      "不支持"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "R07",
+    "category": "refusal",
+    "query": "请帮我写一首诗",
+    "history": [],
+    "expected_modes": [
+      "fallback"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "没有足够",
+      "无法",
+      "转人工"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "M01",
+    "category": "multi_turn",
+    "query": "QH20261029006",
+    "history": [
+      {
+        "role": "user",
+        "content": "我的订单到哪了"
+      },
+      {
+        "role": "assistant",
+        "content": "请提供订单号。"
+      }
+    ],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "lookup_shipment"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "在途",
+      "运输"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "M02",
+    "category": "multi_turn",
+    "query": "QH20261028003 有划痕",
+    "history": [
+      {
+        "role": "user",
+        "content": "这个能退吗？"
+      },
+      {
+        "role": "assistant",
+        "content": "请提供订单号，我再帮你判断。"
+      }
+    ],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "质量问题处理"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "符合",
+      "质量"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "M03",
+    "category": "multi_turn",
+    "query": "那现在能退吗？",
+    "history": [
+      {
+        "role": "user",
+        "content": "查一下订单 QH20261028003 的物流"
+      },
+      {
+        "role": "assistant",
+        "content": "该订单已签收。"
+      }
+    ],
+    "expected_modes": [
+      "agent"
+    ],
+    "expected_tools": [
+      "check_after_sales"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "七天无理由退货"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "七天",
+      "符合"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "M04",
+    "category": "multi_turn",
+    "query": "帮我转人工",
+    "history": [
+      {
+        "role": "user",
+        "content": "查一下订单 QH20261026002 的物流"
+      },
+      {
+        "role": "assistant",
+        "content": "该订单在途。"
+      }
+    ],
+    "expected_modes": [
+      "handoff"
+    ],
+    "expected_tools": [
+      "create_handoff"
+    ],
+    "expected_tool_error": false,
+    "expected_sources": [],
+    "expect_citation": false,
+    "must_include_any": [
+      "工单"
+    ],
+    "forbidden": []
+  },
+  {
+    "id": "M05",
+    "category": "multi_turn",
+    "query": "那退货呢？",
+    "history": [
+      {
+        "role": "user",
+        "content": "会员积分怎么抵扣？"
+      },
+      {
+        "role": "assistant",
+        "content": "每 100 积分抵扣 1 元。"
+      }
+    ],
+    "expected_modes": [
+      "rag"
+    ],
+    "expected_tools": [],
+    "expected_tool_error": false,
+    "expected_sources": [
+      "会员退货说明"
+    ],
+    "expect_citation": true,
+    "must_include_any": [
+      "订单号"
+    ],
+    "forbidden": []
+  }
+]
