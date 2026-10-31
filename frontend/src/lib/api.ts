@@ -192,14 +192,130 @@ export interface ChatToolTrace {
   duration_ms: number;
 }
 
+export interface ChatFeedback {
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
 export interface ChatMessage {
   id: number;
   role: string;
   content: string;
   citations: ChatSource[] | null;
   tool_trace: ChatToolTrace[] | null;
+  feedback: ChatFeedback | null;
   model: string | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+  latency_ms: number;
   created_at: string;
+}
+
+export interface AdminConversationSummary {
+  public_id: string;
+  status: string;
+  channel: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  last_message_preview: string | null;
+  open_ticket_count: number;
+  positive_feedback: number;
+  negative_feedback: number;
+}
+
+export interface AdminConversationList {
+  items: AdminConversationSummary[];
+  total: number;
+  status_counts: Record<string, number>;
+}
+
+export interface AdminTicketSummary {
+  id: number;
+  conversation_public_id: string;
+  reason: string;
+  summary: string;
+  status: string;
+  priority: string;
+  assigned_admin_id: number | null;
+  assigned_admin_name: string | null;
+  resolution_note: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminConversationDetail {
+  public_id: string;
+  status: string;
+  channel: string;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
+  tickets: AdminTicketSummary[];
+}
+
+export interface AdminTicketList {
+  items: AdminTicketSummary[];
+  total: number;
+  status_counts: Record<string, number>;
+}
+
+export interface AdminTicketUpdate {
+  status?: string;
+  priority?: string;
+  resolution_note?: string;
+  assign_to_me?: boolean;
+}
+
+export interface InsightMetrics {
+  conversations_total: number;
+  conversations_active: number;
+  conversations_handed_off: number;
+  tickets_open: number;
+  tickets_in_progress: number;
+  tickets_resolved: number;
+  messages_total: number;
+  assistant_messages: number;
+  feedback_positive: number;
+  feedback_negative: number;
+  fallback_messages: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  estimated_cost_cny: number;
+  avg_latency_ms: number;
+}
+
+export interface ToolUsageItem {
+  tool_name: string;
+  label: string;
+  count: number;
+  avg_duration_ms: number;
+}
+
+export interface LowFeedbackItem {
+  feedback_id: number;
+  conversation_public_id: string;
+  message_id: number;
+  assistant_preview: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface KnowledgeGapItem {
+  conversation_public_id: string;
+  question: string;
+  assistant_preview: string;
+  created_at: string;
+}
+
+export interface InsightsResponse {
+  metrics: InsightMetrics;
+  tools: ToolUsageItem[];
+  low_feedback: LowFeedbackItem[];
+  knowledge_gaps: KnowledgeGapItem[];
+  generated_at: string;
 }
 
 export interface ChatConversation {
@@ -238,4 +354,35 @@ export const api = {
     ),
   chatConversation: (publicId: string) =>
     request<ChatConversation>(`/api/chat/conversations/${encodeURIComponent(publicId)}`),
+  submitFeedback: (
+    publicId: string,
+    messageId: number,
+    rating: 1 | -1,
+    comment?: string,
+  ) =>
+    request<ChatFeedback>(
+      `/api/chat/conversations/${encodeURIComponent(publicId)}/messages/${messageId}/feedback`,
+      {
+        method: "POST",
+        body: JSON.stringify({ rating, comment: comment || null }),
+      },
+    ),
+  adminConversations: (status?: string) =>
+    request<AdminConversationList>(
+      `/api/admin/conversations${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+    ),
+  adminConversation: (publicId: string) =>
+    request<AdminConversationDetail>(
+      `/api/admin/conversations/${encodeURIComponent(publicId)}`,
+    ),
+  adminTickets: (status?: string) =>
+    request<AdminTicketList>(
+      `/api/admin/tickets${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+    ),
+  updateTicket: (ticketId: number, payload: AdminTicketUpdate) =>
+    request<AdminTicketSummary>(`/api/admin/tickets/${ticketId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  adminInsights: () => request<InsightsResponse>("/api/admin/insights"),
 };

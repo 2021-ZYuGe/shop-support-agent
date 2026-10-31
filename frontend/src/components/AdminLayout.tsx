@@ -1,10 +1,12 @@
 import {
+  BarChart3,
   BookOpenText,
   LayoutDashboard,
   LogOut,
   MessagesSquare,
   Package,
   Sparkles,
+  TicketCheck,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -50,20 +52,27 @@ export function AdminLayout() {
             <BookOpenText size={18} />
             <span>知识库</span>
           </NavLink>
-          <button className="admin-nav__link" type="button" disabled>
+          <NavLink to="/admin/conversations" className={navClassName}>
             <MessagesSquare size={18} />
             <span>会话中心</span>
-            <em>M5</em>
-          </button>
+          </NavLink>
+          <NavLink to="/admin/tickets" className={navClassName}>
+            <TicketCheck size={18} />
+            <span>工单队列</span>
+          </NavLink>
+          <NavLink to="/admin/insights" className={navClassName}>
+            <BarChart3 size={18} />
+            <span>运营洞察</span>
+          </NavLink>
         </nav>
 
         <div className="milestone-note">
           <div className="milestone-note__icon">
             <Sparkles size={16} />
           </div>
-          <span className="eyebrow">MILESTONE 04</span>
-          <strong>Agent 已上线</strong>
-          <p>订单、物流、售后判断与人工工单已经接入。</p>
+          <span className="eyebrow">MILESTONE 05</span>
+          <strong>运营闭环已上线</strong>
+          <p>会话、工单、反馈与运营洞察已经接入。</p>
         </div>
 
         <div className="admin-account">

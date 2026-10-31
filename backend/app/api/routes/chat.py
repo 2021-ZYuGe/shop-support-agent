@@ -11,9 +11,11 @@ from sqlalchemy import select
 
 from app.api.deps import AppSettings, DbSession
 from app.db.base import utcnow
-from app.db.models import Conversation, Message
+from app.db.models import Conversation, Feedback, Message
 from app.schemas.chat import (
     ChatConversationPublic,
+    ChatFeedbackPublic,
+    ChatFeedbackRequest,
     ChatMessagePublic,
     ChatRequest,
     ChatSource,
@@ -52,6 +54,15 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
         .limit(100)
     ).all()
 
+    feedback_by_message = {
+        feedback.message_id: feedback
+        for feedback in db.scalars(
+            select(Feedback).where(
+                Feedback.message_id.in_([message.id for message in messages])
+            )
+        ).all()
+    }
+
     public_messages: list[ChatMessagePublic] = []
     for message in messages:
         citations = None
@@ -60,6 +71,16 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
         tool_trace = None
         if message.tool_trace:
             tool_trace = [ChatToolTrace(**item) for item in message.tool_trace]
+        feedback = feedback_by_message.get(message.id)
+        feedback_public = (
+            ChatFeedbackPublic(
+                rating=feedback.rating,
+                comment=feedback.comment,
+                created_at=feedback.created_at,
+            )
+            if feedback
+            else None
+        )
         public_messages.append(
             ChatMessagePublic(
                 id=message.id,
@@ -67,7 +88,11 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
                 content=message.content,
                 citations=citations,
                 tool_trace=tool_trace,
+                feedback=feedback_public,
                 model=message.model,
+                prompt_tokens=message.prompt_tokens,
+                completion_tokens=message.completion_tokens,
+                latency_ms=message.latency_ms,
                 created_at=message.created_at,
             )
         )
@@ -78,6 +103,55 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
         messages=public_messages,
+    )
+
+
+@router.post(
+    "/conversations/{public_id}/messages/{message_id}/feedback",
+    response_model=ChatFeedbackPublic,
+)
+def submit_feedback(
+    public_id: str,
+    message_id: int,
+    payload: ChatFeedbackRequest,
+    db: DbSession,
+) -> ChatFeedbackPublic:
+    conversation = db.scalar(
+        select(Conversation).where(Conversation.public_id == public_id)
+    )
+    if conversation is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="会话不存在。")
+
+    message = db.scalar(
+        select(Message).where(
+            Message.id == message_id,
+            Message.conversation_id == conversation.id,
+            Message.role == "assistant",
+        )
+    )
+    if message is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="消息不存在。"
+        )
+
+    feedback = db.scalar(select(Feedback).where(Feedback.message_id == message.id))
+    comment = payload.comment.strip() if payload.comment else None
+    if feedback is None:
+        feedback = Feedback(
+            message_id=message.id,
+            rating=payload.rating,
+            comment=comment or None,
+        )
+        db.add(feedback)
+    else:
+        feedback.rating = payload.rating
+        feedback.comment = comment or None
+    db.commit()
+    db.refresh(feedback)
+    return ChatFeedbackPublic(
+        rating=feedback.rating,
+        comment=feedback.comment,
+        created_at=feedback.created_at,
     )
 
 

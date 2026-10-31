@@ -124,6 +124,12 @@ def overview(
             status="ready",
             description="订单、物流、售后条件判断与人工工单已接入。",
         ),
+        Capability(
+            key="operations",
+            label="运营闭环",
+            status="ready",
+            description="会话、工单、反馈与运营洞察已接入。",
+        ),
     ]
 
     return DashboardResponse(

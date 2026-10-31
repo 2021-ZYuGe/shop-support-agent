@@ -40,3 +40,33 @@ export function statusLabel(status: string): string {
 export function statusTone(status: string): string {
   return orderStatus[status]?.tone ?? "neutral";
 }
+
+export const conversationStatus: Record<string, { label: string; tone: string }> = {
+  active: { label: "AI 对话中", tone: "blue" },
+  handed_off: { label: "已转人工", tone: "rose" },
+};
+
+export const ticketStatus: Record<string, { label: string; tone: string }> = {
+  open: { label: "待处理", tone: "amber" },
+  in_progress: { label: "处理中", tone: "blue" },
+  resolved: { label: "已解决", tone: "green" },
+  closed: { label: "已关闭", tone: "muted" },
+};
+
+export const ticketPriority: Record<string, { label: string; tone: string }> = {
+  high: { label: "高优先级", tone: "rose" },
+  normal: { label: "普通", tone: "neutral" },
+  low: { label: "低", tone: "muted" },
+};
+
+export function conversationStatusMeta(status: string) {
+  return conversationStatus[status] ?? { label: status, tone: "neutral" };
+}
+
+export function ticketStatusMeta(status: string) {
+  return ticketStatus[status] ?? { label: status, tone: "neutral" };
+}
+
+export function ticketPriorityMeta(priority: string) {
+  return ticketPriority[priority] ?? { label: priority, tone: "neutral" };
+}

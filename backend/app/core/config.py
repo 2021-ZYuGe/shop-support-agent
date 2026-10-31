@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     deepseek_timeout_seconds: float = 90.0
     deepseek_temperature: float = 0.2
     deepseek_max_tokens: int = 1000
+    deepseek_input_price_cny_per_million: float = 1.0
+    deepseek_output_price_cny_per_million: float = 4.0
 
     rag_top_k: int = 5
     rag_min_similarity: float = 0.40

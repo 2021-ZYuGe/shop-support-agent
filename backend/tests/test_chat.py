@@ -301,3 +301,39 @@ def test_order_slot_is_filled_from_history(
     assert second_meta["mode"] == "agent"
     assert second_meta["tools"][0]["tool"] == "lookup_shipment"
     assert second_meta["conversation_id"] == conversation_id
+
+
+def test_feedback_can_be_submitted_and_updated(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(knowledge, "search_knowledge", lambda *args, **kwargs: [])
+    response = client.post(
+        "/api/chat/stream",
+        json={"message": "你们支持海外配送吗？"},
+    )
+    events = _parse_sse(response.text)
+    meta = next(data for name, data in events if name == "meta")
+    conversation = client.get(
+        f"/api/chat/conversations/{meta['conversation_id']}"
+    ).json()
+    assistant = conversation["messages"][-1]
+
+    first = client.post(
+        f"/api/chat/conversations/{meta['conversation_id']}/messages/{assistant['id']}/feedback",
+        json={"rating": -1, "comment": "没有解决我的问题"},
+    )
+    assert first.status_code == 200
+    assert first.json()["rating"] == -1
+
+    updated = client.post(
+        f"/api/chat/conversations/{meta['conversation_id']}/messages/{assistant['id']}/feedback",
+        json={"rating": 1, "comment": "补充后可以了"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["rating"] == 1
+
+    refreshed = client.get(
+        f"/api/chat/conversations/{meta['conversation_id']}"
+    ).json()
+    assert refreshed["messages"][-1]["feedback"]["rating"] == 1

@@ -252,6 +252,7 @@ class HandoffTicket(Base):
     assigned_admin_id: Mapped[int | None] = mapped_column(
         ForeignKey("admins.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=utcnow, onupdate=utcnow

@@ -10,6 +10,8 @@ import {
   ShieldCheck,
   Sparkles,
   Square,
+  ThumbsDown,
+  ThumbsUp,
   Wrench,
 } from "lucide-react";
 import {
@@ -27,6 +29,7 @@ import {
   api,
   ApiError,
   type ChatConversation,
+  type ChatFeedback,
   type ChatSource,
   type ChatToolTrace,
 } from "../lib/api";
@@ -43,6 +46,8 @@ interface UiMessage {
   toolTrace: ChatToolTrace[];
   mode?: ChatMode;
   streaming?: boolean;
+  serverId?: number;
+  feedback?: ChatFeedback | null;
 }
 
 const suggestions = [
@@ -83,6 +88,8 @@ function mapConversation(conversation: ChatConversation): UiMessage[] {
           ? historyMode(message.model, tools)
           : undefined,
       streaming: false,
+      serverId: message.id,
+      feedback: message.feedback,
     };
   });
 }
@@ -255,6 +262,7 @@ export function ChatPage() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [restoring, setRestoring] = useState(true);
+  const [feedbackPending, setFeedbackPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -309,6 +317,34 @@ export function ChatPage() {
     setInput("");
     setError(null);
     textareaRef.current?.focus();
+  };
+
+  const handleFeedback = async (
+    messageKey: string,
+    rating: 1 | -1,
+  ) => {
+    const message = messages.find((item) => item.key === messageKey);
+    if (!message?.serverId || !conversationId || feedbackPending) return;
+
+    setFeedbackPending(messageKey);
+    try {
+      const feedback = await api.submitFeedback(
+        conversationId,
+        message.serverId,
+        rating,
+      );
+      setMessages((current) =>
+        current.map((item) =>
+          item.key === messageKey ? { ...item, feedback } : item,
+        ),
+      );
+    } catch (feedbackError) {
+      setError(
+        feedbackError instanceof Error ? feedbackError.message : "反馈提交失败",
+      );
+    } finally {
+      setFeedbackPending(null);
+    }
   };
 
   const handleStop = () => {
@@ -372,11 +408,15 @@ export function ChatPage() {
               ),
             );
           },
-          onDone: () => {
+          onDone: (done) => {
             setMessages((current) =>
               current.map((message) =>
                 message.key === assistantKey
-                  ? { ...message, streaming: false }
+                  ? {
+                      ...message,
+                      streaming: false,
+                      serverId: done.message_id ?? undefined,
+                    }
                   : message,
               ),
             );
@@ -582,6 +622,40 @@ export function ChatPage() {
                       </div>
                       <ToolTrace message={message} />
                       <SourceCards message={message} />
+                      {!message.streaming && message.serverId && (
+                        <div className="chat-feedback">
+                          <span>这条回答有帮助吗？</span>
+                          <div className="chat-feedback__buttons">
+                            <button
+                              className={`feedback-button ${
+                                message.feedback?.rating === 1 ? "is-active" : ""
+                              }`}
+                              type="button"
+                              onClick={() => void handleFeedback(message.key, 1)}
+                              disabled={feedbackPending === message.key}
+                              aria-label="有帮助"
+                              title="有帮助"
+                            >
+                              <ThumbsUp size={14} />
+                            </button>
+                            <button
+                              className={`feedback-button ${
+                                message.feedback?.rating === -1 ? "is-active" : ""
+                              }`}
+                              type="button"
+                              onClick={() => void handleFeedback(message.key, -1)}
+                              disabled={feedbackPending === message.key}
+                              aria-label="没帮助"
+                              title="没帮助"
+                            >
+                              <ThumbsDown size={14} />
+                            </button>
+                          </div>
+                          {message.feedback && (
+                            <em>{feedbackPending === message.key ? "提交中…" : "已记录"}</em>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ),

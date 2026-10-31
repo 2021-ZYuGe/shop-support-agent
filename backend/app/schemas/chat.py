@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -32,13 +33,28 @@ class ChatToolTrace(BaseModel):
     duration_ms: int
 
 
+class ChatFeedbackRequest(BaseModel):
+    rating: Literal[-1, 1]
+    comment: str | None = Field(default=None, max_length=500)
+
+
+class ChatFeedbackPublic(UtcSerializationModel):
+    rating: int
+    comment: str | None = None
+    created_at: datetime
+
+
 class ChatMessagePublic(UtcSerializationModel):
     id: int
     role: str
     content: str
     citations: list[ChatSource] | None = None
     tool_trace: list[ChatToolTrace] | None = None
+    feedback: ChatFeedbackPublic | None = None
     model: str | None = None
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    latency_ms: int = 0
     created_at: datetime
 
 

@@ -745,3 +745,130 @@ M5 计划：
 7. 从知识库到工单的运营闭环。
 
 M5 不需要新的外部 Key。
+
+---
+
+## 2026-10-31 · M5 运营工作台与工单闭环（已完成）
+
+### 本轮目标
+
+补齐 AI 客服的运营侧：
+
+- 会话列表与详情；
+- 消息、知识引用和工具轨迹回看；
+- 用户点赞/点踩反馈；
+- 人工工单队列、分配、状态和备注；
+- 低分反馈与知识缺口；
+- Token、延迟、工具使用和估算成本。
+
+### 数据结构与 API
+
+新增迁移：
+
+- `287994c1846b_add_ticket_resolution_note.py`
+- `handoff_tickets.resolution_note`：客服处理结论/备注。
+
+新增接口：
+
+- `POST /api/chat/conversations/{public_id}/messages/{message_id}/feedback`
+- `GET /api/admin/conversations`
+- `GET /api/admin/conversations/{public_id}`
+- `GET /api/admin/tickets`
+- `PATCH /api/admin/tickets/{ticket_id}`
+- `GET /api/admin/insights`
+
+新增配置：
+
+- `DEEPSEEK_INPUT_PRICE_CNY_PER_MILLION`
+- `DEEPSEEK_OUTPUT_PRICE_CNY_PER_MILLION`
+
+价格只用于运营面板的估算，默认值和实际账单可能存在差异。
+
+### 后端实现
+
+- `backend/app/api/routes/operations.py`
+- `backend/app/schemas/operations.py`
+- `backend/app/api/routes/chat.py`：反馈接口与会话消息反馈返回
+- `backend/app/schemas/chat.py`：反馈、token、延迟字段
+- `backend/app/api/routes/admin.py`：新增运营闭环能力状态
+
+关键行为：
+
+- 反馈同时校验会话 public ID、消息 ID 和 assistant 角色；
+- 同一消息的反馈采用更新语义；
+- 会话详情按消息返回引用、工具轨迹、反馈、token 和延迟；
+- 工单更新时自动分配给当前管理员；
+- 工单支持 open / in_progress / resolved / closed；
+- 洞察通过消息模型 `policy_fallback` 反查前一条用户问题形成知识缺口；
+- 成本按 token 和 `.env` 单价估算。
+
+### 前端
+
+新增页面：
+
+- `/admin/conversations`
+- `/admin/conversations/:publicId`
+- `/admin/tickets`
+- `/admin/insights`
+
+同时：
+
+- 启用后台「会话中心、工单队列、运营洞察」导航；
+- 聊天页新增 AI 回答点赞/点踩；
+- 历史会话恢复反馈状态；
+- 运营概览切换为 M5，7/7 能力就绪；
+- 工单页面支持筛选、状态、优先级、备注和处理保存。
+
+### 验证结果
+
+自动化测试：
+
+```text
+31 passed
+```
+
+新增覆盖：
+
+- 反馈提交与更新；
+- 非管理员访问运营接口返回 401；
+- 会话列表、详情、工具轨迹与反馈；
+- 工单列表与状态/备注更新；
+- 洞察中的负反馈、知识缺口、token 和成本字段。
+
+前端：
+
+- TypeScript 构建通过；
+- 后台页面完成浏览器只读验收；
+- 会话中心显示 12 个会话、1 个已转人工；
+- 会话详情展示工具轨迹和 token/延迟；
+- 工单队列显示待处理工单；
+- 运营洞察显示 24 条消息、2 个知识缺口、5 次工具调用和估算成本。
+
+真实演示库的写入型验收（反馈、工单状态更新）通过测试库自动化完成，避免自动脚本直接改动演示数据。
+
+截图：
+
+- `docs/images/m5-conversations.png`
+- `docs/images/m5-conversation-detail.png`
+
+### 当前限制
+
+1. 只有一个管理员账号，没有角色权限和团队分配；
+2. 工单没有评论线程、SLA、内部通知；
+3. 反馈没有原因分类与自动知识补全任务；
+4. 知识缺口是推导结果，不是独立运营任务；
+5. 消费者会话仍缺少正式认证与限流；
+6. 成本是估算值。
+
+### 下一步：M6
+
+M6 计划：
+
+1. 建立固定评测集，覆盖知识、订单、物流、售后、拒答和多轮场景；
+2. 评测检索 Recall@K、引用支持率、工具调用正确率、安全拒答率；
+3. 记录平均/P95 延迟和 token 成本；
+4. 对比不同 Top-K、相似度阈值、Prompt 与 Reranker；
+5. 输出可复现的前后对比报告；
+6. 把实测结果写进学习文档、产品文档和简历素材。
+
+M6 不需要新的外部 Key。
