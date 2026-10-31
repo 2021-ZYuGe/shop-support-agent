@@ -19,29 +19,29 @@ const milestones = [
     id: "01",
     title: "工程底座",
     detail: "前后端、MySQL、管理员认证",
-    status: "当前完成",
+    status: "已完成",
     tone: "ready",
   },
   {
     id: "02",
     title: "知识入库",
     detail: "硅基流动 Embedding + Chroma",
-    status: "下一里程碑",
-    tone: "next",
+    status: "已完成",
+    tone: "ready",
   },
   {
     id: "03",
     title: "RAG 问答",
     detail: "DeepSeek 流式回答与引用",
-    status: "计划中",
-    tone: "planned",
+    status: "已完成",
+    tone: "ready",
   },
   {
     id: "04",
     title: "Agent 售后",
     detail: "订单工具、物流、人工转接",
-    status: "计划中",
-    tone: "planned",
+    status: "下一里程碑",
+    tone: "next",
   },
 ];
 
@@ -91,7 +91,7 @@ export function LandingPage() {
           <div className="hero__copy">
             <div className="eyebrow-pill">
               <Sparkles size={14} />
-              AI 售后的第一块拼图
+              AI 售后已上线
             </div>
             <h1>
               每一次售后咨询，
@@ -102,10 +102,10 @@ export function LandingPage() {
               最后给出有依据、可转人工的回答。
             </p>
             <div className="hero__actions">
-              <button className="button button--primary" type="button" disabled>
+              <Link className="button button--primary" to="/chat">
                 开始咨询
-                <span className="button__tag">M3 开放</span>
-              </button>
+                <ArrowRight size={16} />
+              </Link>
               <Link className="button button--ghost" to="/admin/login">
                 查看运营工作台
                 <ArrowRight size={16} />
@@ -139,15 +139,16 @@ export function LandingPage() {
                   <strong>青禾售后助理</strong>
                   <span>
                     <i className="online-dot" />
-                    产品预览
+                    AI 在线
                   </span>
                 </div>
-                <span className="chat-preview__badge">M1</span>
+                <span className="chat-preview__badge">LIVE</span>
               </div>
               <div className="chat-preview__body">
                 <div className="bubble bubble--user">我昨天收到的台灯有划痕，可以退换吗？</div>
                 <div className="bubble bubble--assistant">
-                  可以的。请提供订单号，我先核对签收时间和商品情况，再结合售后政策判断。
+                  如果签收后十五天内出现非人为的质量问题，可以提交照片申请换货或退货；
+                  确认为质量问题的，往返运费由商家承担。
                   <div className="citation-preview">
                     <BookOpenText size={15} />
                     <span>
@@ -158,7 +159,7 @@ export function LandingPage() {
                 </div>
               </div>
               <div className="chat-preview__footer">
-                <span>M1 界面示意 · AI 对话将在 M3 接入</span>
+                <span>AI 对话已上线 · 引用可追溯</span>
                 <MessageCircleMore size={16} />
               </div>
             </div>

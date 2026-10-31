@@ -61,9 +61,9 @@ export function AdminLayout() {
           <div className="milestone-note__icon">
             <Sparkles size={16} />
           </div>
-          <span className="eyebrow">MILESTONE 02</span>
-          <strong>知识检索已就位</strong>
-          <p>BGE-M3 向量化与 Chroma 语义检索已经接入。</p>
+          <span className="eyebrow">MILESTONE 03</span>
+          <strong>RAG 问答已上线</strong>
+          <p>DeepSeek 流式回答、引用和拒答已经接入。</p>
         </div>
 
         <div className="admin-account">
@@ -95,8 +95,8 @@ export function AdminLayout() {
             <span className="environment-pill__dot" />
             本地演示环境
           </span>
-          <a className="text-link" href="/">
-            查看消费者端
+          <a className="text-link" href="/chat">
+            体验 AI 客服
           </a>
         </header>
         <main className="admin-content">

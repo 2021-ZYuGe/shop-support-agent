@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     deepseek_api_key: str = ""
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-flash"
+    deepseek_timeout_seconds: float = 90.0
+    deepseek_temperature: float = 0.2
+    deepseek_max_tokens: int = 1000
+
+    rag_top_k: int = 5
+    rag_min_similarity: float = 0.40
+    chat_history_limit: int = 6
+    chat_history_message_chars: int = 1200
+    chat_max_message_chars: int = 1000
 
     siliconflow_api_key: str = ""
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"

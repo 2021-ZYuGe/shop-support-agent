@@ -4,9 +4,9 @@
 
 这是一个**虚构店铺**的教学项目，所有商品、客户、订单和地址均为合成数据。
 
-> 当前进度：**M2 · 知识库与向量检索（已完成）**。M1 的前后端、MySQL 数据层、管理员认证和运营入口已经完成；M2 已接入硅基流动 BGE-M3、本地 Chroma、知识文档上传、索引状态和语义检索调试。RAG 问答与 Agent 在后续里程碑接入。
+> 当前进度：**M3 · RAG 问答与引用（已完成）**。M1 完成前后端、MySQL 和运营底座；M2 接入 BGE-M3、Chroma 与知识库；M3 已上线消费者聊天页，支持 DeepSeek 流式回答、Top-K 知识引用、会话恢复和低相关拒答。订单工具与人工工单在 M4 接入。
 
-![青禾生活首页](docs/images/m1-landing.png)
+![青禾生活首页](docs/images/m3-landing.png)
 
 ## 技术栈
 
@@ -16,10 +16,10 @@
 | 后端 | Python 3.12 + FastAPI |
 | 数据库 | MySQL 5.7 + SQLAlchemy + Alembic |
 | Agent（M4） | LangGraph |
-| 对话模型（M3） | DeepSeek `deepseek-flash` |
+| 对话模型 | DeepSeek `deepseek-flash` + SSE 流式输出 |
 | Embedding | 硅基流动 `BAAI/bge-m3`，1024 维 |
 | 向量索引 | 本地 Chroma 1.5.9（HNSW / cosine） |
-| 认证 | 数据库会话 + HttpOnly Cookie + scrypt 密码哈希 |
+| 认证 | 管理员数据库会话 + HttpOnly Cookie + scrypt 密码哈希 |
 
 全部 AI 推理通过 API 完成，本地不下载或运行大模型。由于电脑配置有限，前端选择更轻的 Vite，而不是 Next.js。
 
@@ -52,6 +52,25 @@
 种子数据包含 3 份文档、9 个切片。M2 验收时还通过上传接口导入 [`docs/examples/member-policy.md`](docs/examples/member-policy.md)，因此当前本地演示库为 4 份文档、12 个切片。
 
 ![知识库与检索](docs/images/m2-knowledge.png)
+
+## M3 已完成
+
+- 新增消费者聊天页 `/chat`，无需管理员登录；
+- 首次提问创建匿名会话，使用随机 public ID，不暴露顺序主键；
+- 短期会话历史保存在 MySQL，刷新页面可恢复；
+- 调用 Chroma 检索 Top-K 片段，低于 0.40 相似度时不进入模型；
+- DeepSeek `deepseek-flash` 通过 SSE 流式返回答案；
+- Prompt 要求仅依据参考资料回答，并禁止编造订单状态、退款承诺或引用来源；
+- 回答展示内联引用编号和可展开的引用资料卡片；
+- 知识库未命中时返回明确的“无足够依据/建议转人工”兜底；
+- 记录用户与助手消息、引用、token 使用量和响应延迟；
+- 支持停止生成、错误提示、开始新对话和会话恢复。
+
+真实浏览器验收中，“会员积分怎么抵扣？”返回了正确政策并引用 1 条来源；
+“请讲一个笑话”触发知识库未命中兜底；“我的订单 QH20261031007 到哪了？”
+没有编造物流状态，而是说明无法查询具体订单并建议转人工。
+
+![消费者聊天页](docs/images/m3-chat.png)
 
 ## 本地启动
 
@@ -92,7 +111,7 @@ TEST_DATABASE_URL=mysql+pymysql://shop_support_app:你的密码@127.0.0.1:3306/s
 SEED_ADMIN_PASSWORD=你自己的初始管理员密码
 ```
 
-M2 的文档向量化和语义检索需要 `SILICONFLOW_API_KEY`。DeepSeek 的 Key 在 M3 之前可以留空。Key 只写入本地 `.env`，不会提交 Git。
+M2 的文档向量化和语义检索需要 `SILICONFLOW_API_KEY`；M3 的聊天需要 `DEEPSEEK_API_KEY`。两个 Key 都只写入本地 `.env`，不会提交 Git。
 
 ### 4. 初始化 MySQL
 
@@ -161,11 +180,12 @@ npm run lint
 
 当前结果：
 
-- 后端：**12 passed**
+- 后端：**16 passed**
 - MySQL：开发库/测试库迁移成功；开发库种子成功；健康检查、登录、概览、登出接口均通过真实 MySQL 验证
 - 知识库：BGE-M3 连通性验证通过；种子文档实际写入 Chroma；语义检索返回正确命中
+- 聊天：DeepSeek 流式回答、引用、拒答和会话持久化通过真实 API 与浏览器验收
 - 前端：TypeScript 构建通过
-- 浏览器验收：登录 → 知识库 → 上传文档 → 自动建立索引 → 语义检索；以及登录、订单台账、退出和未登录重定向
+- 浏览器验收：登录 → 知识库 → 上传文档 → 索引 → 语义检索；聊天 → 流式回答 → 引用 → 刷新恢复 → 拒答兜底；以及登录、订单台账、退出和未登录重定向
 
 ## API
 
@@ -181,6 +201,8 @@ npm run lint
 | POST | `/api/admin/knowledge/documents` | 上传 Markdown/TXT/PDF/DOCX 并切片入库 |
 | POST | `/api/admin/knowledge/documents/{id}/index` | 为待处理/失败切片建立 Chroma 索引 |
 | GET | `/api/admin/knowledge/search` | 语义检索召回片段、相似度与来源 |
+| GET | `/api/chat/conversations/{public_id}` | 读取匿名会话与消息历史 |
+| POST | `/api/chat/stream` | SSE 流式 RAG 回答，返回引用和 token 使用量 |
 
 ## 目录结构
 
@@ -192,7 +214,7 @@ npm run lint
 │  │  ├─ core/             # 配置与密码/会话安全
 │  │  ├─ db/               # SQLAlchemy 模型、会话、种子
 │  │  ├─ schemas/          # Pydantic 接口模型
-│  │  ├─ services/         # Embedding、Chroma、文档解析与切片
+│  │  ├─ services/         # Embedding、Chroma、RAG、LLM 与会话
 │  │  └─ main.py
 │  ├─ alembic/             # 数据库迁移
 │  ├─ scripts/             # MySQL 初始化脚本
@@ -202,8 +224,8 @@ npm run lint
 │  └─ src/
 │     ├─ auth/             # 登录状态
 │     ├─ components/       # 品牌、后台框架、状态徽标
-│     ├─ lib/              # API 客户端与格式化
-│     └─ pages/            # 首页、登录、概览、订单、知识库
+│     ├─ lib/              # API 客户端、SSE 解析与格式化
+│     └─ pages/            # 首页、聊天、登录、概览、订单、知识库
 ├─ data/                   # 上传文件、Chroma 索引，不提交
 ├─ docs/
 │  ├─ examples/            # 可手动上传的示例文档
@@ -221,8 +243,7 @@ npm run lint
 
 ## 后续里程碑
 
-- **M3**：DeepSeek RAG 流式问答与引用；
-- **M4**：LangGraph Agent、订单/物流工具、人工转接；
+- **M4**：LangGraph Agent、订单/物流工具、售后判断和人工工单；
 - **M5**：会话中心、工单和运营数据面板；
 - **M6**：评测集、Rerank 与 Prompt 优化；
 - **M7**：安全、测试、文档与最终演示。
@@ -234,4 +255,5 @@ npm run lint
 - 不使用真实客户个人信息；
 - API Key 只存本地 `.env`，不提交 Git；
 - 后台密码使用 scrypt 哈希，会话保存在服务端数据库；
+- 消费者会话使用不可枚举的随机 public ID，但当前尚无正式登录和防滥用限流；
 - 后续阶段会对工具调用增加白名单、参数校验和审计。

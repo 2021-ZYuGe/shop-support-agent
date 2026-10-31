@@ -5,10 +5,10 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock3,
-  MessageSquareText,
   Package,
   RefreshCw,
   TicketCheck,
+  Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。知识库已接入 BGE-M3 与 Chroma 检索。</p>
+          <p>这里是青禾生活的售后运营入口。RAG 问答已上线，下一步接入订单与物流工具。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -239,46 +239,46 @@ export function DashboardPage() {
         <aside className="dashboard-column dashboard-column--narrow">
           <section className="sprint-card">
             <div className="sprint-card__top">
-              <span className="eyebrow eyebrow--light">MILESTONE 02</span>
+              <span className="eyebrow eyebrow--light">MILESTONE 03</span>
               <span className="sprint-card__badge">已完成</span>
             </div>
-            <h2>知识库与向量检索</h2>
-            <p>静态售后知识已经可以被切片、向量化并按语义召回。</p>
+            <h2>RAG 问答与引用</h2>
+            <p>消费者已经可以基于店铺知识获得带来源的流式回答。</p>
             <ul>
               <li>
                 <CheckCircle2 size={15} />
-                Chroma 本地持久化索引
+                DeepSeek 流式生成
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                硅基流动 BGE-M3 Embedding
+                Top-K 知识拼接
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                文档切片与索引状态
+                内联引用与来源卡片
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                {data.metrics.indexed_chunks} 个切片已建立索引
+                低相关拒答与转人工提示
               </li>
             </ul>
-            <Link className="button button--light button--full" to="/admin/knowledge">
-              进入知识库
+            <Link className="button button--light button--full" to="/chat">
+              体验 AI 客服
               <ArrowRight size={15} />
             </Link>
           </section>
 
           <section className="next-card">
             <div className="next-card__icon">
-              <MessageSquareText size={19} />
+              <Wrench size={19} />
             </div>
-            <span className="eyebrow">UP NEXT · M3</span>
-            <h2>RAG 问答与引用</h2>
-            <p>把检索结果交给 DeepSeek，接入流式回答、知识引用和不确定时拒答。</p>
+            <span className="eyebrow">UP NEXT · M4</span>
+            <h2>Agent 业务工具</h2>
+            <p>接入订单查询、物流轨迹、售后判断和人工工单，让回答从“知道”走向“能处理”。</p>
             <div className="next-card__meta">
-              <span>DeepSeek</span>
-              <span>SSE 流式</span>
-              <span>引用与拒答</span>
+              <span>LangGraph</span>
+              <span>订单 / 物流</span>
+              <span>人工工单</span>
             </div>
           </section>
 

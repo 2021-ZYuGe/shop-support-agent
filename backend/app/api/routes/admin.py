@@ -107,8 +107,16 @@ def overview(
         Capability(
             key="ai_chat",
             label="RAG 问答",
-            status="planned",
-            description="M3 将接入 DeepSeek 流式回答与引用。",
+            status=(
+                "ready"
+                if retrieval_ready and settings.has_deepseek_key
+                else "pending"
+            ),
+            description=(
+                "DeepSeek 流式回答、引用与拒答已接入。"
+                if retrieval_ready and settings.has_deepseek_key
+                else "需要完成知识索引并配置 DeepSeek Key。"
+            ),
         ),
         Capability(
             key="agent_tools",

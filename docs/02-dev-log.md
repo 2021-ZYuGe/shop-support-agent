@@ -406,3 +406,159 @@ M3 计划：
 8. 验证 SSE 流式输出、引用和错误降级。
 
 M3 开始需要 DeepSeek API Key；硅基流动 Key 已经在 M2 使用。
+
+---
+
+## 2026-10-31 · M3 RAG 问答与引用（已完成）
+
+### 本轮目标
+
+把 M2 的检索能力接入消费者问答：
+
+- 匿名会话创建与恢复；
+- 检索 Top-K 售后知识；
+- DeepSeek 流式回答；
+- 内联引用与引用资料卡片；
+- 低相关拒答/转人工提示；
+- 保存消息、引用、token 和延迟；
+- 完整的消费者聊天页面。
+
+### 依赖验证
+
+DeepSeek 兼容 OpenAI SDK，使用：
+
+```text
+model: deepseek-flash
+base_url: https://api.deepseek.com
+stream: true
+stream_options.include_usage: true
+```
+
+实际验证：
+
+- 流式请求成功；
+- 返回多条 delta；
+- 最终返回 usage；
+- 配置中的 Key 只存在于本地 `.env`。
+
+### 后端实现
+
+新增：
+
+- `backend/app/api/routes/chat.py`：SSE 聊天接口、会话历史接口；
+- `backend/app/schemas/chat.py`：会话、消息、引用结构；
+- `backend/app/services/llm.py`：DeepSeek 流式客户端与 usage 事件；
+- `backend/app/services/chat.py`：Prompt、历史裁剪、引用拼装、消息保存、SSE 编码。
+
+路由：
+
+- `POST /api/chat/stream`
+- `GET /api/chat/conversations/{public_id}`
+
+本轮没有新增数据库表；沿用 M1 的 `conversations` 和 `messages`。
+
+### 问答策略
+
+- `RAG_TOP_K=5`；
+- `RAG_MIN_SIMILARITY=0.40`；
+- 无高于阈值的结果时，不调用 DeepSeek，返回固定拒答文案；
+- 有结果时，将历史、资料编号和用户问题组装后调用 `deepseek-flash`；
+- 系统提示词禁止编造政策、订单状态、退款承诺和引用来源；
+- SSE 的 meta 事件先返回会话 ID、模式与来源；
+- 流式 delta 逐段推送；
+- 完成后保存助手消息和 citations，并返回 done；
+- 失败通过 error 事件返回，已生成的部分会尽力保存。
+
+### 阈值校准
+
+使用真实 Embedding + Chroma 抽样：
+
+| 查询 | 最高相似度 | 行为 |
+|---|---:|---|
+| 请讲一个笑话 | 0.389 | 低于阈值，拒答 |
+| 你们支持比特币付款吗 | 0.516 | 进入模型，由 Prompt 判断资料不足 |
+| 我的订单 QH20261031007 到哪了 | 0.645 | 进入模型，但明确说明无法查具体订单 |
+| 七天无理由退货怎么退 | 0.774 | 正常 RAG 回答 |
+
+### 前端实现
+
+新增消费者聊天页 `/chat`：
+
+- 首页“开始咨询”直接进入；
+- 流式回答与停止生成；
+- 引用资料折叠卡片；
+- 回答实际引用到的来源才展示；
+- 刷新页面恢复当前会话；
+- 新对话清除当前 local/session 会话；
+- 无关问题展示“知识库未命中”；
+- 错误提示、输入长度限制和移动端布局。
+
+新增 `frontend/src/lib/chatStream.ts`：原生 fetch + ReadableStream 的 SSE 解析。
+
+### 真实验收
+
+真实 DeepSeek + Chroma + MySQL：
+
+1. “会员积分怎么抵扣？”
+   - RAG 回答；
+   - 引用 1 条来源；
+   - 656 prompt + 129 completion tokens；
+   - 约 1.6 秒。
+2. “我的订单 QH20261031007 到哪了？”
+   - 不编造物流状态；
+   - 说明知识库没有该订单实时信息；
+   - 建议转人工。
+3. “请讲一个笑话”
+   - 检索结果低于阈值；
+   - 知识库未命中兜底；
+   - 不调用生成模型。
+4. 浏览器刷新后恢复会话；
+5. 新对话清空界面；
+6. 引用资料展开后显示原文与相似度。
+
+自动化测试：
+
+```text
+16 passed
+```
+
+新增覆盖：
+
+- SSE meta/delta/done；
+- 无来源 fallback；
+- RAG 流式回答；
+- 引用持久化；
+- 会话历史恢复；
+- 未知会话 404。
+
+截图：
+
+- `docs/images/m3-chat.png`
+- `docs/images/m3-chat-mobile.png`
+- `docs/images/m3-dashboard.png`
+- `docs/images/m3-landing.png`
+
+### 已知限制
+
+1. 消费者会话是随机 public ID，不是正式登录认证；
+2. `/api/chat/stream` 暂无请求限流，不能直接公开部署；
+3. 具体订单和物流状态尚未接入工具，只能安全拒答/建议转人工；
+4. 还没有真正可创建的工单，M3 只是文字建议；
+5. 没有用户反馈按钮和低分回答闭环；
+6. 没有系统化评测集，当前质量来自抽样验收。
+
+### 下一步：M4
+
+M4 计划：
+
+1. 用 LangGraph 建立确定性工作流；
+2. 意图路由：知识问答、订单、物流、售后、转人工；
+3. 只读订单和物流工具；
+4. 售后退换条件判断；
+5. 创建人工工单；
+6. 工具参数校验、超时、最多调用次数与审计日志；
+7. 把工具结果、知识引用一起合成最终回答；
+8. 更新聊天页支持工具信息与转人工结果；
+9. 补充 Agent 场景测试和开发文档。
+
+M4 开始前不需要新的外部 Key，现有 DeepSeek 和硅基流动 Key 已足够。

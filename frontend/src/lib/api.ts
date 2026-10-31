@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -172,6 +172,35 @@ export interface KnowledgeSearchResponse {
   results: KnowledgeSearchItem[];
 }
 
+export interface ChatSource {
+  chunk_id: number;
+  document_id: number;
+  title: string;
+  doc_type: string;
+  version: string;
+  heading: string | null;
+  content: string;
+  source_name: string;
+  similarity: number;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: string;
+  content: string;
+  citations: ChatSource[] | null;
+  model: string | null;
+  created_at: string;
+}
+
+export interface ChatConversation {
+  public_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
+}
+
 export const api = {
   health: () => request<HealthResponse>("/api/health"),
   login: (email: string, password: string) =>
@@ -198,4 +227,6 @@ export const api = {
     request<KnowledgeSearchResponse>(
       `/api/admin/knowledge/search?q=${encodeURIComponent(query)}&top_k=${topK}`,
     ),
+  chatConversation: (publicId: string) =>
+    request<ChatConversation>(`/api/chat/conversations/${encodeURIComponent(publicId)}`),
 };
