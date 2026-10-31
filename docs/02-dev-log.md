@@ -5,7 +5,7 @@
 
 ---
 
-## 2026-10-31 · M1 工程骨架与数据库
+## 2026-10-31 · M1 工程骨架与数据库（已完成）
 
 ### 本轮目标
 
@@ -177,23 +177,49 @@ tsc -b && vite build → 成功
 - 390px 手机；
 - 截图保存在 `docs/images/`。
 
+### 补充验收：MySQL 真库联调
+
+`.env` 配置完成后，使用专用账号 `shop_support_app` 完成真实 MySQL 验收。
+
+连接信息（不记录密码）：
+
+```text
+MySQL 5.7.31
+开发库：shop_support_dev
+测试库：shop_support_test
+字符集：utf8mb4_unicode_ci
+引擎：InnoDB
+```
+
+执行结果：
+
+- 开发库 Alembic 迁移成功；
+- 测试库 Alembic 迁移成功；
+- 开发库种子脚本执行成功；
+- 开发库共 14 张表（13 张业务表 + `alembic_version`）；
+- 数据：1 个管理员、6 个商品、8 个订单、11 条订单明细、5 条物流、3 份知识文档、9 个知识切片。
+
+真实 MySQL 接口验收：
+
+- `/api/health` 返回 `database=connected`；
+- 管理员登录成功，会话写入 `admin_sessions`；
+- `/api/admin/overview` 返回真实 MySQL 指标与最近订单；
+- 登出成功，服务端会话被删除；
+- 浏览器登录后台成功，页面显示 MySQL 数据，UTC 时间正确转为本地时间。
+
+至此 M1 的数据库验收项关闭。
+
 ### 已知问题与未完成项
 
-1. **MySQL 真库尚未联调**
-   - 数据模型和 Alembic 迁移已完成；
-   - 自动化测试和本轮浏览器验收使用临时 SQLite 验收库；
-   - 本机 MySQL root 未提供可用凭据，不能擅自猜测或重置密码；
-   - 需要用户准备专用 MySQL 账号和两个业务库后，再执行真库迁移与种子。
-
-2. **Chroma 尚未安装**
+1. **Chroma 尚未安装**
    - 按计划在 M2 安装到项目虚拟环境；
    - M1 不下载模型，也不调用 Embedding API。
 
-3. **AI API 尚未配置**
+2. **AI API 尚未接入业务**
    - DeepSeek 和硅基流动 Key 只放 `.env`；
-   - 本轮不使用 Key。
+   - 本轮不调用 AI API。
 
-4. **公网部署**
+3. **公网部署**
    - 本阶段不做，避免引入服务器和 Docker；
    - 先完成本地可演示作品。
 
@@ -225,4 +251,4 @@ M2 开工前需要：
 
 - 项目 `.env` 中配置 `SILICONFLOW_API_KEY`；
 - 部署 Chroma 的所有数据目录保持在 D 盘项目内；
-- MySQL 若还未联通，先用验收方式继续开发，但在 M2 结束前应完成 MySQL 真库联调。
+- 使用已经验收的 MySQL 开发库继续开发。

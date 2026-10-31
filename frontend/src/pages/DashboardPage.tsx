@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。M1 数据底座已经就绪。</p>
+          <p>这里是青禾生活的售后运营入口。M1 数据底座已完成 MySQL 联调。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -238,7 +238,7 @@ export function DashboardPage() {
           <section className="sprint-card">
             <div className="sprint-card__top">
               <span className="eyebrow eyebrow--light">MILESTONE 01</span>
-              <span className="sprint-card__badge">进行中</span>
+              <span className="sprint-card__badge">已完成</span>
             </div>
             <h2>工程骨架与数据底座</h2>
             <p>让后续 RAG、Agent 和运营后台有一块足够稳定的地基。</p>
