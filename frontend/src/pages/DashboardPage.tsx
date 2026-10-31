@@ -5,10 +5,10 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock3,
+  MessagesSquare,
   Package,
   RefreshCw,
   TicketCheck,
-  Wrench,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。RAG 问答已上线，下一步接入订单与物流工具。</p>
+          <p>这里是青禾生活的售后运营入口。Agent 业务工具已上线，下一步进入运营与工单闭环。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -154,7 +154,7 @@ export function DashboardPage() {
             <TicketCheck size={19} />
           </div>
           <strong>{data.metrics.open_tickets}</strong>
-          <p>人工转接将在 M4 接入</p>
+          <p>Agent 已可创建待处理工单</p>
         </article>
       </section>
 
@@ -239,46 +239,46 @@ export function DashboardPage() {
         <aside className="dashboard-column dashboard-column--narrow">
           <section className="sprint-card">
             <div className="sprint-card__top">
-              <span className="eyebrow eyebrow--light">MILESTONE 03</span>
+              <span className="eyebrow eyebrow--light">MILESTONE 04</span>
               <span className="sprint-card__badge">已完成</span>
             </div>
-            <h2>RAG 问答与引用</h2>
-            <p>消费者已经可以基于店铺知识获得带来源的流式回答。</p>
+            <h2>Agent 业务工具</h2>
+            <p>系统已经能在回答前查询订单、物流并判断售后条件。</p>
             <ul>
               <li>
                 <CheckCircle2 size={15} />
-                DeepSeek 流式生成
+                LangGraph 意图路由
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                Top-K 知识拼接
+                订单 / 物流只读工具
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                内联引用与来源卡片
+                售后条件判断
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                低相关拒答与转人工提示
+                人工工单与审计日志
               </li>
             </ul>
             <Link className="button button--light button--full" to="/chat">
-              体验 AI 客服
+              体验 Agent 客服
               <ArrowRight size={15} />
             </Link>
           </section>
 
           <section className="next-card">
             <div className="next-card__icon">
-              <Wrench size={19} />
+              <MessagesSquare size={19} />
             </div>
-            <span className="eyebrow">UP NEXT · M4</span>
-            <h2>Agent 业务工具</h2>
-            <p>接入订单查询、物流轨迹、售后判断和人工工单，让回答从“知道”走向“能处理”。</p>
+            <span className="eyebrow">UP NEXT · M5</span>
+            <h2>运营工作台与工单闭环</h2>
+            <p>让客服查看会话、工具轨迹和人工工单，并收集反馈与知识缺口。</p>
             <div className="next-card__meta">
-              <span>LangGraph</span>
-              <span>订单 / 物流</span>
-              <span>人工工单</span>
+              <span>会话中心</span>
+              <span>工单处理</span>
+              <span>质量反馈</span>
             </div>
           </section>
 

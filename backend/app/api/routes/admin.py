@@ -121,8 +121,8 @@ def overview(
         Capability(
             key="agent_tools",
             label="Agent 业务工具",
-            status="planned",
-            description="M4 将接入订单、物流、售后判断与人工转接。",
+            status="ready",
+            description="订单、物流、售后条件判断与人工工单已接入。",
         ),
     ]
 

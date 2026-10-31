@@ -2969,15 +2969,109 @@ code {
   margin-top: 7px;
 }
 
-.fallback-tag {
+.chat-mode-tag {
   display: inline-block;
   margin-bottom: 6px;
   border-radius: 999px;
-  background: rgba(199, 119, 91, 0.09);
-  color: #946046;
   padding: 3px 7px;
   font-size: 0.6rem;
   font-weight: 650;
+}
+
+.chat-mode-tag--rose {
+  background: rgba(199, 119, 91, 0.09);
+  color: #946046;
+}
+
+.chat-mode-tag--green {
+  background: rgba(74, 130, 87, 0.1);
+  color: #39724a;
+}
+
+.chat-mode-tag--amber {
+  background: rgba(181, 136, 60, 0.12);
+  color: #8c6521;
+}
+
+.chat-mode-tag--blue {
+  background: rgba(67, 112, 137, 0.1);
+  color: #3b6a82;
+}
+
+.chat-tools {
+  margin-top: 7px;
+}
+
+.chat-tools summary {
+  display: inline-flex;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+.chat-tools summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-tools summary:hover {
+  color: var(--forest);
+}
+
+.chat-tools__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.chat-tool {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.76);
+  padding: 8px 10px;
+}
+
+.chat-tool__status {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--forest);
+}
+
+.chat-tool--error .chat-tool__status {
+  color: var(--clay);
+}
+
+.chat-tool > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.chat-tool strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 650;
+}
+
+.chat-tool p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.63rem;
+  line-height: 1.55;
+}
+
+.chat-tool em {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: "JetBrains Mono", "Cascadia Code", Consolas, monospace;
+  font-size: 0.56rem;
+  font-style: normal;
 }
 
 .chat-sources summary {

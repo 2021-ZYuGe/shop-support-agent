@@ -24,11 +24,20 @@ class ChatSource(BaseModel):
     similarity: float
 
 
+class ChatToolTrace(BaseModel):
+    tool: str
+    label: str
+    status: str
+    summary: str
+    duration_ms: int
+
+
 class ChatMessagePublic(UtcSerializationModel):
     id: int
     role: str
     content: str
     citations: list[ChatSource] | None = None
+    tool_trace: list[ChatToolTrace] | None = None
     model: str | None = None
     created_at: datetime
 

@@ -1,13 +1,16 @@
 import {
+  AlertCircle,
   ArrowLeft,
   BookOpenText,
   Bot,
+  CheckCircle2,
   Loader2,
   RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
   Square,
+  Wrench,
 } from "lucide-react";
 import {
   useEffect,
@@ -20,8 +23,14 @@ import {
 import { Link } from "react-router-dom";
 
 import { Brand } from "../components/Brand";
-import { api, ApiError, type ChatConversation, type ChatSource } from "../lib/api";
-import { streamChat } from "../lib/chatStream";
+import {
+  api,
+  ApiError,
+  type ChatConversation,
+  type ChatSource,
+  type ChatToolTrace,
+} from "../lib/api";
+import { streamChat, type ChatMode } from "../lib/chatStream";
 
 const CONVERSATION_KEY = "qinghe_chat_conversation";
 const MAX_MESSAGE = 1000;
@@ -31,31 +40,51 @@ interface UiMessage {
   role: "user" | "assistant";
   content: string;
   sources: ChatSource[];
-  mode?: "rag" | "fallback";
+  toolTrace: ChatToolTrace[];
+  mode?: ChatMode;
   streaming?: boolean;
 }
 
 const suggestions = [
   "七天无理由退货怎么申请？",
-  "物流一直不更新怎么办？",
   "质量问题可以换货吗？",
+  "查一下订单 QH20261028003 到哪了？",
   "会员积分怎么抵扣？",
 ];
 
+const modeTags: Record<string, { label: string; tone: string }> = {
+  fallback: { label: "知识库未命中", tone: "rose" },
+  handoff: { label: "已转人工", tone: "green" },
+  clarify: { label: "需要补充信息", tone: "amber" },
+  agent: { label: "工具辅助", tone: "blue" },
+};
+
+function historyMode(
+  model: string | null,
+  tools: ChatToolTrace[],
+): ChatMode {
+  if (model === "policy_fallback") return "fallback";
+  if (model === "handoff_workflow") return "handoff";
+  if (model === "workflow_clarify") return "clarify";
+  return tools.length > 0 ? "agent" : "rag";
+}
+
 function mapConversation(conversation: ChatConversation): UiMessage[] {
-  return conversation.messages.map((message) => ({
-    key: `server-${message.id}`,
-    role: message.role === "user" ? "user" : "assistant",
-    content: message.content,
-    sources: message.citations ?? [],
-    mode:
-      message.role === "assistant"
-        ? message.model === "policy_fallback"
-          ? "fallback"
-          : "rag"
-        : undefined,
-    streaming: false,
-  }));
+  return conversation.messages.map((message) => {
+    const tools = message.tool_trace ?? [];
+    return {
+      key: `server-${message.id}`,
+      role: message.role === "user" ? "user" : "assistant",
+      content: message.content,
+      sources: message.citations ?? [],
+      toolTrace: tools,
+      mode:
+        message.role === "assistant"
+          ? historyMode(message.model, tools)
+          : undefined,
+      streaming: false,
+    };
+  });
 }
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
@@ -145,6 +174,40 @@ function sourceList(message: UiMessage): Array<{ source: ChatSource; number: num
   return filtered.length > 0 ? filtered : all;
 }
 
+function ToolTrace({ message }: { message: UiMessage }) {
+  if (message.toolTrace.length === 0) return null;
+
+  return (
+    <details className="chat-tools">
+      <summary>
+        <Wrench size={14} />
+        工具调用 · {message.toolTrace.length} 项
+      </summary>
+      <div className="chat-tools__list">
+        {message.toolTrace.map((tool, index) => (
+          <article
+            className={`chat-tool chat-tool--${tool.status}`}
+            key={`${message.key}-${tool.tool}-${index}`}
+          >
+            <span className="chat-tool__status">
+              {tool.status === "success" ? (
+                <CheckCircle2 size={14} />
+              ) : (
+                <AlertCircle size={14} />
+              )}
+            </span>
+            <div>
+              <strong>{tool.label}</strong>
+              <p>{tool.summary}</p>
+            </div>
+            <em>{tool.duration_ms}ms</em>
+          </article>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function SourceCards({ message }: { message: UiMessage }) {
   const sources = sourceList(message);
   if (sources.length === 0) return null;
@@ -173,7 +236,7 @@ function SourceCards({ message }: { message: UiMessage }) {
   );
 }
 
-function TypingState({ mode }: { mode?: "rag" | "fallback" }) {
+function TypingState({ mode }: { mode?: ChatMode }) {
   return (
     <div className="typing-state">
       <span className="typing-dots">
@@ -260,12 +323,13 @@ export function ChatPage() {
     const assistantKey = nextKey("assistant");
     setMessages((current) => [
       ...current,
-      { key: userKey, role: "user", content: text, sources: [] },
+      { key: userKey, role: "user", content: text, sources: [], toolTrace: [] },
       {
         key: assistantKey,
         role: "assistant",
         content: "",
         sources: [],
+        toolTrace: [],
         streaming: true,
       },
     ]);
@@ -288,7 +352,12 @@ export function ChatPage() {
             setMessages((current) =>
               current.map((message) =>
                 message.key === assistantKey
-                  ? { ...message, sources: meta.sources, mode: meta.mode }
+                  ? {
+                      ...message,
+                      sources: meta.sources,
+                      toolTrace: meta.tools,
+                      mode: meta.mode,
+                    }
                   : message,
               ),
             );
@@ -390,28 +459,28 @@ export function ChatPage() {
             <span className="eyebrow eyebrow--light">AI AFTER-SALES ASSISTANT</span>
             <h1>售后问题，先问青禾。</h1>
             <p>
-              基于店铺售后知识与 DeepSeek，先查资料，再组织回答。
-              每个结论都尽量留下可核对的来源。
+              基于店铺售后知识、订单工具与 DeepSeek，先查资料和业务事实，
+              再组织回答。每个结论都尽量留下可核对的来源。
             </p>
           </div>
 
           <div className="chat-aside__card">
             <span className="eyebrow">HOW IT WORKS</span>
             <div className="chat-flow">
-              <span><b>01</b> 识别问题</span>
+              <span><b>01</b> 理解问题</span>
               <i />
-              <span><b>02</b> 检索知识</span>
+              <span><b>02</b> 检索 / 调工具</span>
               <i />
               <span><b>03</b> 生成回答</span>
             </div>
-            <p>检索不到足够依据时，系统会明确说明，而不是继续编造。</p>
+            <p>系统会先判断需要知识还是业务数据；不知道时会明确说明，而不是继续编造。</p>
           </div>
 
           <div className="chat-aside__scope">
             <ShieldCheck size={18} />
             <div>
               <strong>边界说明</strong>
-              <p>当前可回答售后政策与商品知识；具体订单、物流和退款操作将在下一阶段接入人工工具。</p>
+              <p>可查询演示订单与物流，也可创建人工工单；真实退款、改地址和赔付不会自动执行。</p>
             </div>
           </div>
 
@@ -431,7 +500,7 @@ export function ChatPage() {
                 <strong>青禾售后助理</strong>
                 <span>
                   <i className="online-dot" />
-                  DeepSeek + 店铺知识库
+                  DeepSeek + 知识库 + 业务工具
                 </span>
               </div>
             </div>
@@ -461,8 +530,8 @@ export function ChatPage() {
                 <span className="eyebrow">WELCOME TO QINGHE CARE</span>
                 <h2>你好，我是青禾售后助理。</h2>
                 <p>
-                  可以问我售后政策、退换货条件、物流说明和商品常见问题。
-                  我会先检索店铺知识，再给出带来源的回答。
+                  可以问我售后政策，也可以查询演示订单和物流、判断售后条件，
+                  需要时还能创建人工工单。我会先检索知识与业务数据，再给出带依据的回答。
                 </p>
                 <div className="chat-suggestions">
                   {suggestions.map((suggestion) => (
@@ -494,8 +563,12 @@ export function ChatPage() {
                       <Bot size={16} />
                     </div>
                     <div className="chat-message__body">
-                      {message.mode === "fallback" && (
-                        <span className="fallback-tag">知识库未命中</span>
+                      {message.mode && modeTags[message.mode] && (
+                        <span
+                          className={`chat-mode-tag chat-mode-tag--${modeTags[message.mode].tone}`}
+                        >
+                          {modeTags[message.mode].label}
+                        </span>
                       )}
                       <div className="chat-bubble chat-bubble--assistant">
                         {message.streaming && !message.content ? (
@@ -507,6 +580,7 @@ export function ChatPage() {
                           </>
                         )}
                       </div>
+                      <ToolTrace message={message} />
                       <SourceCards message={message} />
                     </div>
                   </div>

@@ -1,9 +1,12 @@
-import { API_BASE, ApiError, type ChatSource } from "./api";
+import { API_BASE, ApiError, type ChatSource, type ChatToolTrace } from "./api";
+
+export type ChatMode = "rag" | "agent" | "fallback" | "handoff" | "clarify";
 
 export interface ChatStreamMeta {
   conversation_id: string;
-  mode: "rag" | "fallback";
+  mode: ChatMode;
   sources: ChatSource[];
+  tools: ChatToolTrace[];
 }
 
 export interface ChatStreamDone {
@@ -12,7 +15,8 @@ export interface ChatStreamDone {
   prompt_tokens: number;
   completion_tokens: number;
   latency_ms: number;
-  mode: "rag" | "fallback";
+  mode: ChatMode;
+  tools: ChatToolTrace[];
 }
 
 interface ChatStreamHandlers {

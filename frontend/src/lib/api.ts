@@ -184,11 +184,20 @@ export interface ChatSource {
   similarity: number;
 }
 
+export interface ChatToolTrace {
+  tool: string;
+  label: string;
+  status: string;
+  summary: string;
+  duration_ms: number;
+}
+
 export interface ChatMessage {
   id: number;
   role: string;
   content: string;
   citations: ChatSource[] | null;
+  tool_trace: ChatToolTrace[] | null;
   model: string | null;
   created_at: string;
 }

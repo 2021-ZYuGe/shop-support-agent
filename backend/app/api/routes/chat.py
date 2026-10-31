@@ -17,8 +17,9 @@ from app.schemas.chat import (
     ChatMessagePublic,
     ChatRequest,
     ChatSource,
+    ChatToolTrace,
 )
-from app.services import chat as chat_service
+from app.services import agent, chat as chat_service
 from app.services import embedding, knowledge, llm, vector_store
 
 logger = logging.getLogger(__name__)
@@ -56,12 +57,16 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
         citations = None
         if message.citations:
             citations = [ChatSource(**item) for item in message.citations]
+        tool_trace = None
+        if message.tool_trace:
+            tool_trace = [ChatToolTrace(**item) for item in message.tool_trace]
         public_messages.append(
             ChatMessagePublic(
                 id=message.id,
                 role=message.role,
                 content=message.content,
                 citations=citations,
+                tool_trace=tool_trace,
                 model=message.model,
                 created_at=message.created_at,
             )
@@ -133,7 +138,7 @@ def stream_chat(
     db.commit()
 
     try:
-        raw_sources = knowledge.search_knowledge(db, user_text, settings.rag_top_k)
+        outcome = agent.run_agent(db, conversation, history, user_text)
     except embedding.EmbeddingNotConfiguredError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)
@@ -149,29 +154,20 @@ def stream_chat(
     except knowledge.KnowledgeError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
-    source_models = [
-        ChatSource(**source)
-        for source in raw_sources
-        if float(source.get("similarity", 0)) >= settings.rag_min_similarity
-    ][: settings.rag_top_k]
-    sources_payload = [_source_payload(source) for source in source_models]
+    sources_payload = [
+        _source_payload(ChatSource(**source)) for source in outcome.sources
+    ]
+    tool_trace = outcome.tool_trace
+    mode = outcome.mode
     public_id = conversation.public_id
+    direct_answer = outcome.direct_answer
 
-    if source_models:
-        if not settings.has_deepseek_key:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="尚未配置 DEEPSEEK_API_KEY，无法生成回答。",
-            )
-        mode = "rag"
-        llm_messages = chat_service.build_llm_messages(
-            history,
-            sources_payload,
-            user_text,
+    needs_generation = direct_answer is None
+    if needs_generation and not settings.has_deepseek_key:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="尚未配置 DEEPSEEK_API_KEY，无法生成回答。",
         )
-    else:
-        mode = "fallback"
-        llm_messages = []
 
     def event_stream() -> Iterator[str]:
         yield chat_service.sse_event(
@@ -180,6 +176,7 @@ def stream_chat(
                 "conversation_id": public_id,
                 "mode": mode,
                 "sources": sources_payload,
+                "tools": tool_trace,
             },
         )
 
@@ -187,7 +184,14 @@ def stream_chat(
         parts: list[str] = []
         usage = llm.LLMUsage(prompt_tokens=0, completion_tokens=0)
         saved = False
-        model_name = settings.deepseek_model if mode == "rag" else "policy_fallback"
+        if direct_answer is None:
+            model_name = settings.deepseek_model
+        elif mode == "fallback":
+            model_name = "policy_fallback"
+        elif mode == "handoff":
+            model_name = "handoff_workflow"
+        else:
+            model_name = "workflow_clarify"
 
         def persist_reply(reply: str) -> int | None:
             nonlocal saved
@@ -198,6 +202,7 @@ def stream_chat(
                     public_id=public_id,
                     content=reply.strip(),
                     citations=sources_payload,
+                    tool_trace=tool_trace,
                     model=model_name,
                     prompt_tokens=usage.prompt_tokens,
                     completion_tokens=usage.completion_tokens,
@@ -211,13 +216,11 @@ def stream_chat(
                 return None
 
         try:
-            if mode == "fallback":
-                parts.append(chat_service.FALLBACK_ANSWER)
-                yield chat_service.sse_event(
-                    "delta", {"text": chat_service.FALLBACK_ANSWER}
-                )
+            if direct_answer is not None:
+                parts.append(direct_answer)
+                yield chat_service.sse_event("delta", {"text": direct_answer})
             else:
-                for event in llm.stream_completion(settings, llm_messages):
+                for event in llm.stream_completion(settings, outcome.llm_messages or []):
                     if isinstance(event, llm.LLMDelta):
                         parts.append(event.text)
                         yield chat_service.sse_event("delta", {"text": event.text})
@@ -239,6 +242,7 @@ def stream_chat(
                     "completion_tokens": usage.completion_tokens,
                     "latency_ms": latency_ms,
                     "mode": mode,
+                    "tools": tool_trace,
                 },
             )
         except GeneratorExit:

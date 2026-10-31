@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     chat_history_limit: int = 6
     chat_history_message_chars: int = 1200
     chat_max_message_chars: int = 1000
+    tool_timeout_ms: int = 5000
+    max_tool_calls_per_turn: int = 3
 
     siliconflow_api_key: str = ""
     siliconflow_base_url: str = "https://api.siliconflow.cn/v1"

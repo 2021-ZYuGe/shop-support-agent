@@ -40,8 +40,8 @@ const milestones = [
     id: "04",
     title: "Agent 售后",
     detail: "订单工具、物流、人工转接",
-    status: "下一里程碑",
-    tone: "next",
+    status: "已完成",
+    tone: "ready",
   },
 ];
 

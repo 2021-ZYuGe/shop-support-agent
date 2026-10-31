@@ -17,11 +17,10 @@ def test_overview_contains_seeded_metrics(admin_client: TestClient) -> None:
     assert len(body["recent_orders"]) == 5
     assert body["generated_at"].endswith("+00:00")
     assert body["recent_orders"][0]["placed_at"].endswith("+00:00")
-    assert {item["status"] for item in body["capabilities"]} == {
-        "ready",
-        "pending",
-        "planned",
-    }
+    capability_statuses = {item["status"] for item in body["capabilities"]}
+    assert capability_statuses <= {"ready", "pending", "planned"}
+    capabilities = {item["key"]: item for item in body["capabilities"]}
+    assert capabilities["agent_tools"]["status"] == "ready"
 
 
 def test_orders_endpoint_returns_seed_orders(admin_client: TestClient) -> None:

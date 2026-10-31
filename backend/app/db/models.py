@@ -208,6 +208,7 @@ class Message(Base):
     role: Mapped[str] = mapped_column(String(16), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    tool_trace: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     model: Mapped[str | None] = mapped_column(String(80), nullable=True)
     prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

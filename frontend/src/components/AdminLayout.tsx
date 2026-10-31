@@ -61,9 +61,9 @@ export function AdminLayout() {
           <div className="milestone-note__icon">
             <Sparkles size={16} />
           </div>
-          <span className="eyebrow">MILESTONE 03</span>
-          <strong>RAG 问答已上线</strong>
-          <p>DeepSeek 流式回答、引用和拒答已经接入。</p>
+          <span className="eyebrow">MILESTONE 04</span>
+          <strong>Agent 已上线</strong>
+          <p>订单、物流、售后判断与人工工单已经接入。</p>
         </div>
 
         <div className="admin-account">

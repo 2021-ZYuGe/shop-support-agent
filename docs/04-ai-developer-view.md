@@ -19,7 +19,11 @@ FastAPI
    │    ├─ 历史裁剪与 Prompt 组装
    │    ├─ 相似度阈值与拒答
    │    ├─ DeepSeek SSE 流式生成
-   │    └─ 消息、引用、token、延迟持久化
+   │    └─ 消息、引用、工具轨迹、token、延迟持久化
+   ├─ Agent Service（LangGraph）
+   │    ├─ 规则意图路由
+   │    ├─ 订单 / 物流 / 售后 / 工单节点
+   │    └─ 工具审计与调用上限
    ├─ 数据层：SQLAlchemy
    └─ MySQL 5.7
         ├─ 商品、订单、物流
@@ -27,12 +31,14 @@ FastAPI
         └─ 会话、消息、工具日志、工单、反馈
 ```
 
-M4 后增加：
+M5 后增加：
 
 ```text
-FastAPI
-   ├─ LangGraph 状态图
-   └─ 订单/物流/售后工具
+运营工作台
+   ├─ 会话详情
+   ├─ 工具轨迹
+   ├─ 工单队列
+   └─ 反馈与知识缺口
 ```
 
 ## 2. 关键代码地图
@@ -47,15 +53,17 @@ FastAPI
 | 认证接口 | `backend/app/api/routes/auth.py` | 登录、登出、当前用户 |
 | 运营接口 | `backend/app/api/routes/admin.py` | 概览、订单、能力状态 |
 | 知识接口 | `backend/app/api/routes/knowledge.py` | 文档、索引、检索 |
-| 聊天接口 | `backend/app/api/routes/chat.py` | SSE、会话历史、拒答与流式编排 |
+| 聊天接口 | `backend/app/api/routes/chat.py` | SSE、会话历史、Agent 调用与流式编排 |
+| Agent 工作流 | `backend/app/services/agent.py` | LangGraph 路由、节点、上下文组合 |
+| 业务工具 | `backend/app/services/tools.py` | 订单、物流、售后判断、工单、审计 |
 | Embedding | `backend/app/services/embedding.py` | BGE-M3 批量调用与重试 |
 | 向量库 | `backend/app/services/vector_store.py` | Chroma 持久化、余弦 Top-K |
 | 知识编排 | `backend/app/services/knowledge.py` | 解析、切片、索引状态、检索 |
-| 聊天编排 | `backend/app/services/chat.py` | Prompt、历史、引用、消息持久化 |
+| 聊天编排 | `backend/app/services/chat.py` | Prompt、历史、引用、工具上下文、持久化 |
 | LLM | `backend/app/services/llm.py` | DeepSeek 流式客户端与 usage |
 | 前端 API | `frontend/src/lib/api.ts` | 统一 fetch、错误处理、类型定义 |
 | SSE 客户端 | `frontend/src/lib/chatStream.ts` | ReadableStream 解析与事件分发 |
-| 聊天 UI | `frontend/src/pages/ChatPage.tsx` | 流式对话、来源、恢复、停止生成 |
+| 聊天 UI | `frontend/src/pages/ChatPage.tsx` | 流式对话、工具轨迹、来源、恢复 |
 | 登录状态 | `frontend/src/auth/AuthContext.tsx` | loading/authenticated/anonymous |
 | 路由保护 | `frontend/src/components/RequireAuth.tsx` | 未登录重定向 |
 | 后台布局 | `frontend/src/components/AdminLayout.tsx` | 导航、管理员信息、退出 |
@@ -109,9 +117,9 @@ M1 已完成开发库/测试库迁移、开发库种子、接口和浏览器登�
 - `knowledge_chunks` 有 `document_id + chunk_index` 唯一约束；
 - `chroma_id` 唯一，方便索引重建与对账；
 - `vector_status` 与 `index_error` 让失败可观察、可重试；
-- `messages` 已用于保存 citations、token、latency 和模型名；
-- `tool_call_logs` 预留参数与结果摘要，M4 记录工具链；
-- `handoff_tickets` 与 `conversations` 解耦，支持一次会话多次转接；
+- `messages` 已用于保存 citations、tool_trace、token、latency 和模型名；
+- `tool_call_logs` 记录工具参数、结果摘要、状态和耗时；
+- `handoff_tickets` 保存真实人工工单，并与会话解耦；
 - 时间统一用 UTC 存储，API 输出带时区。
 
 ## 5. 失败与边界设计
@@ -130,14 +138,18 @@ M1/M2/M3 已处理的边界：
 - Chroma 显式接收向量，不使用默认本地 Embedding；
 - 低于相似度阈值不调用模型，返回确定性拒答；
 - Prompt 禁止编造政策、订单状态、退款承诺和引用来源；
-- SSE 出错、用户中止时保留已生成内容并给出错误提示。
+- SSE 出错、用户中止时保留已生成内容并给出错误提示；
+- 工具参数由服务端意图路由控制，不让模型自由调用任意后端；
+- 订单/物流只读，运单号脱敏，不返回手机号和地址；
+- MySQL SELECT 设置查询超时，单轮工具调用有上限；
+- 工具错误记录为失败轨迹，不伪造成功结果；
+- 工单创建对已有 open 工单幂等。
 
 后续必须补充：
 
 - 消费者会话的正式鉴权与请求限流；
-- 工具参数校验与白名单；
-- 工具超时与最多调用次数；
-- 人工工单创建失败时的回退；
+- 工具的正式单元/契约测试扩展到真实 MySQL；
+- 工具结果的二次确认和更细粒度权限；
 - Prompt 注入和知识文档注入防护；
 - 日志中的手机号、地址脱敏；
 - 文档删除、版本管理和索引重建策略。
@@ -151,6 +163,8 @@ M1/M2/M3 已处理的边界：
 - 认证、权限、数据接口、时间序列化；
 - 切片长度、标题归属、文档列表、上传、索引/检索 Key 缺失；
 - SSE meta/delta/done、拒答、RAG 回答、引用持久化、历史恢复、404；
+- 订单/物流/售后/工单工具、错误轨迹、工单幂等；
+- Agent SSE 工具路径、工具结果与知识引用组合；
 - 前端 `tsc` 构建；
 - 浏览器端到端手工验收；
 - 真实 SiliconFlow + DeepSeek + Chroma + MySQL 验收。
@@ -203,6 +217,26 @@ M2 没有做文档删除和版本回滚，这是下一阶段之前明确保留�
 
 > 流式输出只是传输方式；真正决定产品质量的是检索边界、Prompt 约束、拒答策略和可追溯引用。
 
+## 7.2 M4 实现结果
+
+已完成：
+
+1. LangGraph 状态图：路由、订单、物流、售后、工单、检索、组合节点；
+2. 规则优先的意图识别，支持从历史消息补全订单号；
+3. 订单与物流工具读取 MySQL，输出脱敏结果；
+4. 售后条件规则：取消/未签收/七天无理由/十五天质量问题；
+5. 人工工单写入 `handoff_tickets`，同一会话 open 工单幂等；
+6. 工具调用写入 `tool_call_logs`，消息写入 `tool_trace`；
+7. MySQL SELECT 设置 `max_execution_time`，单轮调用有上限；
+8. SSE meta/done 返回工具轨迹，前端展示工具结果和模式标签；
+9. 直接回答模式不调用模型：缺失订单号、订单不存在、转人工成功；
+10. 工具结果与知识来源组合，用于售后条件回答；
+11. 后端测试 26 个全部通过，真实浏览器场景通过。
+
+M4 的核心技术判断：
+
+> 售后 Agent 的价值不在于“模型能自由调用多少接口”，而在于系统能明确哪些数据可以查、哪些动作不能做、什么时候必须交给人。
+
 ## 8. 面试表达
 
 重点不是“我会调 API”，而是：
@@ -212,19 +246,19 @@ M2 没有做文档删除和版本回滚，这是下一阶段之前明确保留�
 同时要能主动说出限制：
 
 - 已完成 MySQL 5.7 开发/测试库迁移与接口验收，但还没有真实业务流量；
-- Chroma、BGE-M3、DeepSeek 流式问答已接入，但订单工具和 Agent 尚未接入；
+- Chroma、BGE-M3、DeepSeek 流式问答和 Agent 业务工具已接入；
 - 消费者会话使用随机 public ID，不是正式鉴权；流式接口也还没有限流；
+- 工单已落库，但管理员处理 UI 尚未完成；
 - 没有真实业务指标，当前质量结论来自抽样验收；
 - 多 Agent 不是默认选择，当前场景确定性更重要。
 
 ## 9. 下一阶段的技术验收
 
-M4 要继续验证：
+M5 要继续验证：
 
-- 意图路由是否能把知识、订单、物流、售后和转人工区分开；
-- 工具参数是否经过校验，缺失订单号时是否先追问；
-- 工具超时、失败和重复调用是否有上限；
-- 工具结果是否能与知识引用一起合成回答；
-- 转人工是否真正创建工单，而不是只输出一句话；
-- 高风险动作是否保持只读或人工审批；
-- Agent 场景测试是否可重复。
+- 管理员能否查看完整会话、引用和工具轨迹；
+- 工单能否被分配、备注、关闭，并记录状态流转；
+- 用户反馈能否关联到具体 assistant message；
+- 低分回答和未解决问题能否形成知识缺口；
+- Token、延迟、工具耗时和成本能否按会话聚合；
+- 普通管理员是否只能看到授权范围内的数据。
