@@ -21,6 +21,8 @@ def test_overview_contains_seeded_metrics(admin_client: TestClient) -> None:
     assert capability_statuses <= {"ready", "pending", "planned"}
     capabilities = {item["key"]: item for item in body["capabilities"]}
     assert capabilities["agent_tools"]["status"] == "ready"
+    assert capabilities["security"]["status"] == "ready"
+    assert capabilities["delivery"]["status"] == "ready"
 
 
 def test_orders_endpoint_returns_seed_orders(admin_client: TestClient) -> None:

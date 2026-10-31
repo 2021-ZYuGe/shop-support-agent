@@ -72,6 +72,21 @@ class Settings(BaseSettings):
     upload_dir: str = "./data/uploads"
     max_upload_size_mb: int = 10
 
+    rate_limit_enabled: bool = True
+    rate_limit_chat_per_minute: int = 20
+    rate_limit_chat_per_hour: int = 120
+    rate_limit_read_per_minute: int = 60
+    rate_limit_feedback_per_minute: int = 30
+    rate_limit_login_per_minute: int = 10
+    trust_proxy_headers: bool = False
+    security_headers_enabled: bool = True
+    max_api_body_bytes: int = 262144
+    pii_redaction_enabled: bool = True
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() == "production"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

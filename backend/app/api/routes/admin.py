@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import AppSettings, CurrentAdmin, DbSession
+from app.core import pii
 from app.db.base import utcnow
 from app.db.models import (
     HandoffTicket,
@@ -136,6 +137,18 @@ def overview(
             status="ready",
             description="50 条评测集、Reranker 与 Prompt 对比已接入。",
         ),
+        Capability(
+            key="security",
+            label="安全与限流",
+            status="ready",
+            description="登录/聊天限流、PII 脱敏、安全响应头与提示注入拦截已启用。",
+        ),
+        Capability(
+            key="delivery",
+            label="演示交付",
+            status="ready",
+            description="README、演示指南、自动测试与评测报告已就绪。",
+        ),
     ]
 
     return DashboardResponse(
@@ -178,7 +191,7 @@ def list_orders(
             OrderListItem(
                 order_no=order.order_no,
                 customer_name=order.customer_name,
-                customer_phone=order.customer_phone,
+                customer_phone=pii.redact_pii(order.customer_phone),
                 status=order.status,
                 total_cents=order.total_cents,
                 item_count=sum(item.quantity for item in order.items),

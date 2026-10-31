@@ -415,6 +415,125 @@ else:
 - Embedding/Reranker 成本未计入估算；
 - 没有并发、限流和线上流量验证。
 
+## 7.5 M7 实现结果
+
+### 限流
+
+`app/core/rate_limit.py` 实现单进程滑动窗口：
+
+```python
+class InMemoryRateLimiter:
+    def hit(self, key, limit, window_seconds):
+        # 清理窗口外时间戳
+        # 满额返回 allowed=False + retry_after
+```
+
+关键点：
+
+- `threading.Lock` 保证 FastAPI 线程池下计数安全；
+- key 由 `scope + window + client_ip` 组成；
+- 支持 `X-Forwarded-For`，但默认不信任，避免伪造绕过；
+- 超限抛 `HTTPException(429)`，带 `Retry-After`；
+- 单进程内存实现，多实例需要 Redis。
+
+接口限额：
+
+| 接口 | 限额 |
+|---|---|
+| 登录 | 10 次/分钟 |
+| 聊天 | 20 次/分钟 + 120 次/小时 |
+| 会话读取 | 60 次/分钟 |
+| 反馈 | 30 次/分钟 |
+
+### PII
+
+`app/core/pii.py` 覆盖：
+
+- 中国大陆手机号；
+- 18 位身份证号；
+- 16-19 位银行卡号；
+- 邮箱；
+- 座机。
+
+应用位置：
+
+1. 聊天输入入库前；
+2. 反馈评论入库前；
+3. 后台订单手机号返回前；
+4. 日志输出前。
+
+日志过滤额外处理：
+
+- 订单号；
+- Bearer Token；
+- `sk-` API Key。
+
+正则不能覆盖地址和自由文本变体，因此文档明确写“不宣称完全脱敏”。
+
+### 提示注入
+
+`app/core/guardrails.py` 维护明显注入模式：
+
+```text
+忽略之前的指令
+输出系统提示词
+ignore previous instructions
+jailbreak / 越狱 / 开发者模式
+```
+
+Agent 在路由节点先检查：
+
+```python
+if looks_like_prompt_injection(query):
+    return {"intent": "guard"}
+```
+
+`guard` 直接走确定性兜底，不检索、不调用模型。  
+这比只依赖 Prompt 更省成本，也更可测试。
+
+### 安全中间件
+
+`app/core/middleware.py` 是纯 ASGI 中间件：
+
+- 检查 JSON 请求体 `Content-Length`；
+- 添加安全响应头；
+- API 路径加 CSP；
+- 生产环境加 HSTS；
+- `/api/auth/*` 加 `Cache-Control: no-store`。
+
+没有用 `BaseHTTPMiddleware`，避免 SSE 流式响应的额外包装风险。
+
+### 登录与 Cookie
+
+- 登录接口加限流；
+- 账号不存在时也执行一次 scrypt 校验，减少时间侧信道；
+- 生产环境 Cookie 自动 `Secure`；
+- 错误信息统一为“邮箱或密码错误”。
+
+### 验证
+
+新增 10 个安全测试，后端测试从 33 增加到：
+
+```text
+43 passed
+```
+
+覆盖：
+
+- 安全响应头；
+- 413 请求体限制；
+- PII 脱敏；
+- 日志过滤；
+- 聊天脱敏；
+- 提示注入；
+- 聊天/登录限流；
+- 后台手机号脱敏。
+
+### 关键工程判断
+
+> 安全功能必须可测试、可解释、可回退；  
+> 不能在文档里把“本地演示基线”说成“生产级安全”。
+
 ## 8. 面试表达
 
 重点不是“我会调 API”，而是：
@@ -429,7 +548,7 @@ else:
 
 - 已完成 MySQL 5.7 开发/测试库迁移与接口验收，但还没有真实业务流量；
 - Chroma、BGE-M3、DeepSeek 流式问答和 Agent 业务工具已接入；
-- 消费者会话使用随机 public ID，不是正式鉴权；流式接口也还没有限流；
+- 消费者会话使用随机 public ID，不是正式鉴权；虽有单进程限流，但没有账号体系和 CSRF Token；
 - 工单处理 UI 已完成，但还没有角色权限、SLA 和评论线程；
 - 已有 50 条离线评测，但样本是合成的、规模小、只有单次运行，不能等同于真实业务指标；
 - 多 Agent 不是默认选择，当前场景确定性更重要。
@@ -444,10 +563,18 @@ M6 已完成：
 - Prompt v2 设为生产默认，Reranker 保留可选；
 - 评测事务回滚，不污染演示库。
 
-M7 要继续验证：
+M7 已完成：
 
-- 消费者流式接口的限流、超时和错误恢复；
-- 日志与 API 返回中的 PII 脱敏；
-- 权限边界、提示注入和越权访问；
-- 更难的评测样本与人工抽检；
-- README、演示脚本和最终交付材料是否完整。
+- 登录/聊天/读取/反馈限流，429 + `Retry-After`；
+- PII 入库前脱敏与日志过滤；
+- 明显提示注入在路由层拦截；
+- 安全响应头、CSP、请求体限制、CORS 收紧和生产 Cookie Secure；
+- 43 个后端测试通过；
+- 演示指南与最终文档就绪。
+
+后续可选：
+
+- Redis 共享限流，支持多实例；
+- 角色权限、CSRF Token、完整审计查询；
+- 更难的评测集、人工评审和线上指标；
+- HTTPS、域名、隐私合规和渗透测试。

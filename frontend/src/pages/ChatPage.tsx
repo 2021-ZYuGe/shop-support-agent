@@ -685,7 +685,10 @@ export function ChatPage() {
               disabled={restoring}
             />
             <div className="chat-composer__bottom">
-              <span>{input.length}/{MAX_MESSAGE} · Enter 发送，Shift + Enter 换行</span>
+              <span>
+                {input.length}/{MAX_MESSAGE} · Enter 发送，Shift + Enter 换行 ·
+                请勿发送身份证或银行卡信息
+              </span>
               {isStreaming ? (
                 <button
                   className="chat-stop-button"

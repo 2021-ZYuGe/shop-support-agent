@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import delete, select
 
 from app.api.deps import AppSettings, CurrentAdmin, DbSession
+from app.core.rate_limit import enforce_login_rate_limit
 from app.core.security import (
     hash_password,
     hash_session_token,
@@ -22,9 +23,14 @@ from app.schemas.auth import (
 )
 
 router = APIRouter()
+_DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing")
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    dependencies=[Depends(enforce_login_rate_limit)],
+)
 def login(
     payload: LoginRequest,
     request: Request,
@@ -34,7 +40,13 @@ def login(
 ) -> LoginResponse:
     email = payload.email.strip().lower()
     admin = db.scalar(select(Admin).where(Admin.email == email, Admin.is_active.is_(True)))
-    if admin is None or not verify_password(payload.password, admin.password_hash):
+    if admin is None:
+        verify_password(payload.password, _DUMMY_PASSWORD_HASH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="邮箱或密码错误",
+        )
+    if not verify_password(payload.password, admin.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="邮箱或密码错误",
@@ -60,12 +72,13 @@ def login(
     )
     db.commit()
 
+    cookie_secure = settings.session_cookie_secure or settings.is_production
     response.set_cookie(
         key=settings.session_cookie_name,
         value=token,
         max_age=settings.session_ttl_hours * 3600,
         httponly=True,
-        secure=settings.session_cookie_secure,
+        secure=cookie_secure,
         samesite="lax",
         path="/",
     )
@@ -91,7 +104,7 @@ def logout(
         key=settings.session_cookie_name,
         path="/",
         httponly=True,
-        secure=settings.session_cookie_secure,
+        secure=settings.session_cookie_secure or settings.is_production,
         samesite="lax",
     )
     return MessageResponse(message="已退出登录")

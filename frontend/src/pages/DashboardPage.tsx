@@ -7,7 +7,7 @@ import {
   Clock3,
   Package,
   RefreshCw,
-  ShieldCheck,
+  Rocket,
   TicketCheck,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -102,7 +102,7 @@ export function DashboardPage() {
           <h1>
             {greeting()}，{admin?.display_name}
           </h1>
-          <p>这里是青禾生活的售后运营入口。评测与优化已完成，下一步进入安全加固与最终交付。</p>
+          <p>这里是青禾生活的售后运营入口。安全加固与演示交付已完成，项目进入最终展示。</p>
         </div>
         <button
           className="button button--ghost button--small"
@@ -239,50 +239,50 @@ export function DashboardPage() {
         <aside className="dashboard-column dashboard-column--narrow">
           <section className="sprint-card">
             <div className="sprint-card__top">
-              <span className="eyebrow eyebrow--light">MILESTONE 06</span>
+              <span className="eyebrow eyebrow--light">MILESTONE 07</span>
               <span className="sprint-card__badge">已完成</span>
             </div>
-            <h2>评测与效果优化</h2>
-            <p>用固定样本验证检索、工具、引用和回答质量，而不是凭感觉调 Prompt。</p>
+            <h2>安全加固与演示交付</h2>
+            <p>把可运行的工程整理成可演示、可说明边界、可复现验收的最终版本。</p>
             <ul>
               <li>
                 <CheckCircle2 size={15} />
-                50 条场景评测集
+                登录与聊天限流
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                Reranker 检索对比
+                PII 脱敏与日志过滤
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                Prompt v1 / v2 对比
+                安全响应头与提示注入拦截
               </li>
               <li>
                 <CheckCircle2 size={15} />
-                Token、延迟与成本报告
+                演示指南与最终文档
               </li>
             </ul>
             <a
               className="button button--light button--full"
-              href="https://github.com/2021-ZYuGe/shop-support-agent/blob/main/docs/05-evaluation-report.md"
+              href="https://github.com/2021-ZYuGe/shop-support-agent/blob/main/docs/06-demo-guide.md"
               target="_blank"
               rel="noreferrer"
             >
-              查看评测报告
+              查看演示指南
               <ArrowRight size={15} />
             </a>
           </section>
 
           <section className="next-card">
             <div className="next-card__icon">
-              <ShieldCheck size={19} />
+              <Rocket size={19} />
             </div>
-            <span className="eyebrow">UP NEXT · M7</span>
-            <h2>安全加固与最终交付</h2>
-            <p>补测试、限流、PII 脱敏、README、演示视频和最终 GitHub 发布。</p>
+            <span className="eyebrow">FINAL DELIVERY</span>
+            <h2>项目已可演示</h2>
+            <p>按演示指南走完问答、工具、转人工、运营后台与评测报告。</p>
             <div className="next-card__meta">
-              <span>安全</span>
-              <span>测试</span>
+              <span>限流</span>
+              <span>PII</span>
               <span>演示</span>
             </div>
           </section>

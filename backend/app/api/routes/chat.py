@@ -5,11 +5,17 @@ import secrets
 import time
 from collections.abc import Iterator
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.api.deps import AppSettings, DbSession
+from app.core import pii
+from app.core.rate_limit import (
+    enforce_chat_rate_limit,
+    enforce_feedback_rate_limit,
+    enforce_read_rate_limit,
+)
 from app.db.base import utcnow
 from app.db.models import Conversation, Feedback, Message
 from app.schemas.chat import (
@@ -36,6 +42,7 @@ def _source_payload(source: ChatSource) -> dict:
 @router.get(
     "/conversations/{public_id}",
     response_model=ChatConversationPublic,
+    dependencies=[Depends(enforce_read_rate_limit)],
 )
 def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
     conversation = db.scalar(
@@ -109,12 +116,14 @@ def get_conversation(public_id: str, db: DbSession) -> ChatConversationPublic:
 @router.post(
     "/conversations/{public_id}/messages/{message_id}/feedback",
     response_model=ChatFeedbackPublic,
+    dependencies=[Depends(enforce_feedback_rate_limit)],
 )
 def submit_feedback(
     public_id: str,
     message_id: int,
     payload: ChatFeedbackRequest,
     db: DbSession,
+    settings: AppSettings,
 ) -> ChatFeedbackPublic:
     conversation = db.scalar(
         select(Conversation).where(Conversation.public_id == public_id)
@@ -136,6 +145,8 @@ def submit_feedback(
 
     feedback = db.scalar(select(Feedback).where(Feedback.message_id == message.id))
     comment = payload.comment.strip() if payload.comment else None
+    if comment and settings.pii_redaction_enabled:
+        comment = pii.redact_pii(comment)
     if feedback is None:
         feedback = Feedback(
             message_id=message.id,
@@ -155,13 +166,15 @@ def submit_feedback(
     )
 
 
-@router.post("/stream")
+@router.post("/stream", dependencies=[Depends(enforce_chat_rate_limit)])
 def stream_chat(
     payload: ChatRequest,
     db: DbSession,
     settings: AppSettings,
 ) -> StreamingResponse:
     user_text = payload.message.strip()
+    if user_text and settings.pii_redaction_enabled:
+        user_text = pii.redact_pii(user_text)
     if not user_text:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

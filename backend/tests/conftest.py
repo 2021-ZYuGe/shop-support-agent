@@ -13,6 +13,11 @@ os.environ["DEEPSEEK_API_KEY"] = ""
 os.environ["CHROMA_PATH"] = "./data/chroma_test"
 os.environ["CHROMA_COLLECTION"] = "knowledge_chunks_test"
 os.environ["UPLOAD_DIR"] = "./data/test_uploads"
+os.environ["RATE_LIMIT_CHAT_PER_MINUTE"] = "1000"
+os.environ["RATE_LIMIT_CHAT_PER_HOUR"] = "10000"
+os.environ["RATE_LIMIT_READ_PER_MINUTE"] = "1000"
+os.environ["RATE_LIMIT_FEEDBACK_PER_MINUTE"] = "1000"
+os.environ["RATE_LIMIT_LOGIN_PER_MINUTE"] = "1000"
 
 import pytest
 from fastapi.testclient import TestClient

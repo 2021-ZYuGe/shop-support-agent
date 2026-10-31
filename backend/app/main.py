@@ -7,12 +7,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.core.middleware import SecurityMiddleware
+from app.core.pii import PIIRedactingFilter
 
 settings = get_settings()
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
+if settings.pii_redaction_enabled:
+    for handler in logging.getLogger().handlers:
+        handler.addFilter(PIIRedactingFilter())
 
 app = FastAPI(
     title=settings.app_name,
@@ -24,9 +29,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type"],
+    max_age=600,
 )
+app.add_middleware(SecurityMiddleware, settings=settings)
 
 app.include_router(api_router, prefix=settings.api_prefix)
 

@@ -7,6 +7,7 @@ from typing import Any, Literal, TypedDict
 from langgraph.graph import END, START, StateGraph
 from sqlalchemy.orm import Session
 
+from app.core import guardrails
 from app.core.config import get_settings
 from app.db.models import Conversation
 from app.services import chat as chat_service
@@ -168,6 +169,10 @@ def classify_intent(
 
 
 def _route_intent(state: AgentState) -> dict[str, Any]:
+    if guardrails.looks_like_prompt_injection(state["query"]):
+        logger.info("Agent blocked a prompt-injection attempt")
+        return {"intent": "guard", "order_no": None, "issue_type": "no_reason"}
+
     intent, order_no, issue_type = classify_intent(
         state["query"],
         state.get("history", []),
@@ -302,6 +307,9 @@ def _compose_answer(state: AgentState) -> dict[str, Any]:
     query = state["query"]
     options = state.get("options") or AgentOptions.from_settings()
 
+    if intent == "guard":
+        return {"mode": "fallback", "direct_answer": guardrails.GUARD_ANSWER}
+
     if intent == "handoff":
         handoff = state.get("handoff")
         if handoff:
@@ -406,6 +414,7 @@ def _next_node(state: AgentState) -> str:
         "logistics": "logistics_lookup",
         "after_sales": "after_sales_lookup",
         "handoff": "handoff",
+        "guard": "compose",
         "missing_order": "compose",
         "knowledge": "retrieve",
     }.get(state.get("intent", "knowledge"), "retrieve")

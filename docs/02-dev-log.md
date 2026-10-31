@@ -988,3 +988,103 @@ optimized  50/50
 3. 更完整的错误处理与安全测试；
 4. README、演示脚本、截图/视频和最终发布；
 5. 补充更难的评测样本，避免通过率饱和。
+
+## 2026-10-31 · M7 安全加固与演示交付（已完成）
+
+### 本轮目标
+
+1. 给登录、聊天、会话读取和反馈加限流；
+2. 对聊天和反馈中的常见 PII 做入库前脱敏；
+3. 过滤日志中的订单号、Token 和 API Key；
+4. 拦截明显提示注入，不进入检索和模型；
+5. 补安全响应头、请求体限制、CORS 和 Cookie 加固；
+6. 输出可复现的演示指南并完成最终文档。
+
+### 后端实现
+
+新增：
+
+- `app/core/rate_limit.py`：线程安全的内存滑动窗口限流；
+- `app/core/pii.py`：手机号、身份证、银行卡、邮箱、座机脱敏与日志过滤；
+- `app/core/guardrails.py`：明显提示注入检测与兜底文案；
+- `app/core/middleware.py`：安全响应头、CSP、HSTS、请求体大小限制；
+- `tests/test_security.py`：10 个安全测试。
+
+修改：
+
+- `config.py`：新增限流、PII、代理头、安全头和请求体配置；
+- `auth.py`：登录限流、生产 Cookie Secure、账号不存在时的时间侧信道缓解；
+- `chat.py`：聊天/读取/反馈限流，聊天输入和反馈评论脱敏；
+- `agent.py`：新增 `guard` 意图，提示注入直接返回安全文案；
+- `admin.py`：订单手机号脱敏，概览增加安全与交付能力；
+- `main.py`：接入安全中间件、CORS 收紧、日志 PII 过滤器。
+
+### 配置项
+
+```text
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_CHAT_PER_MINUTE=20
+RATE_LIMIT_CHAT_PER_HOUR=120
+RATE_LIMIT_READ_PER_MINUTE=60
+RATE_LIMIT_FEEDBACK_PER_MINUTE=30
+RATE_LIMIT_LOGIN_PER_MINUTE=10
+TRUST_PROXY_HEADERS=false
+SECURITY_HEADERS_ENABLED=true
+MAX_API_BODY_BYTES=262144
+PII_REDACTION_ENABLED=true
+```
+
+`TRUST_PROXY_HEADERS` 默认关闭；只有确认请求经过可信反向代理时才应开启，避免客户端伪造 `X-Forwarded-For` 绕过限流。
+
+### 前端实现
+
+- 聊天输入框增加“请勿发送身份证或银行卡信息”提示；
+- 运营概览切换到 M7，展示限流、PII、提示注入、演示指南；
+- 能力进度更新为 10/10；
+- 后台侧边栏里程碑说明切换到 M7。
+
+### 验证结果
+
+自动化测试：
+
+```text
+43 passed
+```
+
+新增覆盖：
+
+- API 安全响应头；
+- 超大 JSON 返回 413；
+- 手机号/身份证/银行卡/邮箱脱敏；
+- 日志订单号/Token/API Key 过滤；
+- 聊天输入入库前脱敏；
+- 提示注入不进入检索；
+- 聊天限流 429 + Retry-After；
+- 登录限流 429；
+- 后台订单手机号脱敏。
+
+前端：
+
+- `tsc -b && vite build` 通过；
+- lint 0 errors，保留既有 13 条 React 规则 warning；
+- 浏览器验收：运营概览 10/10 能力、M7 里程碑卡片、聊天输入敏感信息提示；
+- 截图：`docs/images/m7-dashboard.png`、`docs/images/m7-chat.png`。
+
+演示指南：
+
+- `docs/06-demo-guide.md`；
+- 覆盖启动、自检、7 个演示场景、安全边界、后台、评测报告、排查和收尾话术。
+
+### 当前限制
+
+1. 限流是单进程内存实现，多实例部署需要 Redis；
+2. PII 只覆盖常见格式，不覆盖地址和自由文本变体；
+3. 提示注入拦截只覆盖明显模式；
+4. 消费者没有正式账号体系和 CSRF Token；
+5. 没有角色权限、完整审计查询和公网部署；
+6. 安全测试不是渗透测试。
+
+### 项目状态
+
+M1-M7 已完成，本地演示链路和最终文档就绪。  
+后续可选优化：Redis 限流、角色权限、更难评测集、HTTPS/域名与隐私合规检查。
